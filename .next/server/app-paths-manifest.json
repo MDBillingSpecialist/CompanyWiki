@@ -1,0 +1,12 @@
+{
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
+  "/wiki/[...slug]/page": "app/wiki/[...slug]/page.js",
+  "/wiki/company-wiki/page": "app/wiki/company-wiki/page.js",
+  "/wiki/hipaa/checklists/page": "app/wiki/hipaa/checklists/page.js",
+  "/wiki/hipaa/core/technical-security/page": "app/wiki/hipaa/core/technical-security/page.js",
+  "/wiki/hipaa/dashboard/page": "app/wiki/hipaa/dashboard/page.js",
+  "/wiki/hipaa/llm-compliance/page": "app/wiki/hipaa/llm-compliance/page.js",
+  "/wiki/hipaa/page": "app/wiki/hipaa/page.js",
+  "/wiki/sop/page": "app/wiki/sop/page.js"
+}
