@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudWatch Alarms for Company Wiki'
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Email address to receive alarm notifications
+    Default: admin@example.com
+
+  ClusterName:
+    Type: String
+    Description: ECS Cluster name
+    Default: company-wiki-cluster
+
+  ServiceName:
+    Type: String
+    Description: ECS Service name
+    Default: company-wiki-service
+
+  LoadBalancerName:
+    Type: String
+    Description: Load Balancer name (full ARN)
+    Default: company-wiki-alb
+
+  TargetGroupName:
+    Type: String
+    Description: Target Group name (full ARN)
+    Default: company-wiki-tg
+
+Resources:
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Company Wiki Alarms
+      TopicName: company-wiki-alarms
+
+  AlarmSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+      TopicArn: !Ref AlarmTopic
+
+  # CPU Utilization Alarm
+  CPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: company-wiki-cpu-alarm
+      AlarmDescription: Alarm if CPU utilization exceeds 80% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ClusterName
+        - Name: ServiceName
+          Value: !Ref ServiceName
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  # Memory Utilization Alarm
+  MemoryUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: company-wiki-memory-alarm
+      AlarmDescription: Alarm if memory utilization exceeds 80% for 5 minutes
+      MetricName: MemoryUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ClusterName
+        - Name: ServiceName
+          Value: !Ref ServiceName
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  # 5XX Error Rate Alarm
+  Error5XXAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: company-wiki-5xx-alarm
+      AlarmDescription: Alarm if 5XX errors exceed 5 in 5 minutes
+      MetricName: HTTPCode_Target_5XX_Count
+      Namespace: AWS/ApplicationELB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerName
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  # Target Health Alarm
+  UnhealthyHostsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: company-wiki-health-alarm
+      AlarmDescription: Alarm if unhealthy hosts count is greater than 0 for 5 minutes
+      MetricName: UnHealthyHostCount
+      Namespace: AWS/ApplicationELB
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: TargetGroup
+          Value: !Ref TargetGroupName
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerName
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  # Response Time Alarm
+  ResponseTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: company-wiki-response-alarm
+      AlarmDescription: Alarm if P95 response time exceeds 2 seconds for 5 minutes
+      MetricName: TargetResponseTime
+      Namespace: AWS/ApplicationELB
+      Statistic: p95
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 2
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerName
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+Outputs:
+  AlarmTopicARN:
+    Description: ARN of the SNS topic for alarms
+    Value: !Ref AlarmTopic

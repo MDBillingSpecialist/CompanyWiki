@@ -1,0 +1,134 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  AWS_DEFAULT_REGION: us-east-1
+  ECR_REPOSITORY: company-wiki
+  ECS_CLUSTER: company-wiki-cluster
+  ECS_SERVICE: company-wiki-service
+
+# Cache node_modules between jobs
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+# Job to lint and test the code
+test:
+  stage: test
+  image: node:18-alpine
+  script:
+    - npm ci
+    - npm run lint
+    # Add tests when available
+    # - npm test
+  except:
+    - tags
+
+# Build the application
+build:
+  stage: build
+  image: node:18-alpine
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
+      - public/
+      - content/
+  except:
+    - tags
+
+# Deploy to AWS ECS - Production
+deploy_production:
+  stage: deploy
+  image: 
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - amazon-linux-extras install docker
+    - aws --version
+    - docker --version
+  script:
+    # Configure AWS credentials
+    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+    - aws configure set region $AWS_DEFAULT_REGION
+    
+    # Login to ECR
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+    
+    # Build and tag the Docker image
+    - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$CI_COMMIT_SHA .
+    - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$CI_COMMIT_SHA $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest
+    
+    # Push the Docker image to ECR
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$CI_COMMIT_SHA
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest
+    
+    # Update the ECS service to use the new image
+    - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+    
+    # Wait for deployment to complete
+    - aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE
+    - echo "Deployment completed successfully!"
+  only:
+    - main
+  environment:
+    name: production
+    url: https://wiki.company.com
+
+# Deploy to AWS ECS - Staging
+deploy_staging:
+  stage: deploy
+  image: 
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    ECR_REPOSITORY: company-wiki-staging
+    ECS_CLUSTER: company-wiki-cluster-staging
+    ECS_SERVICE: company-wiki-service-staging
+  before_script:
+    - amazon-linux-extras install docker
+    - aws --version
+    - docker --version
+  script:
+    # Configure AWS credentials
+    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+    - aws configure set region $AWS_DEFAULT_REGION
+    
+    # Login to ECR
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+    
+    # Build and tag the Docker image
+    - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$CI_COMMIT_SHA .
+    - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$CI_COMMIT_SHA $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest
+    
+    # Push the Docker image to ECR
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$CI_COMMIT_SHA
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest
+    
+    # Update the ECS service to use the new image
+    - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+    
+    # Wait for deployment to complete
+    - aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE
+    - echo "Deployment completed successfully!"
+  only:
+    - develop
+  environment:
+    name: staging
+    url: https://staging-wiki.company.com

@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'GitHub OIDC Role for CI/CD Deployments'
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization/username
+    Default: YourGitHubOrg
+
+  RepositoryName:
+    Type: String
+    Description: GitHub repository name
+    Default: company-wiki
+
+  OIDCProviderArn:
+    Type: String
+    Description: ARN for the GitHub OIDC Provider
+    Default: ""
+
+Resources:
+  GitHubOIDCRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: GitHubActionsOIDCRole-CompanyWiki
+      Description: Role for GitHub Actions to deploy the Company Wiki application
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !Ref OIDCProviderArn
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/${RepositoryName}:*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonECR-FullAccess
+        - arn:aws:iam::aws:policy/AmazonECS-FullAccess
+      Policies:
+        - PolicyName: DeploymentPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:ListStackResources
+                  - cloudformation:UpdateStack
+                Resource: !Sub "arn:aws:cloudformation:*:${AWS::AccountId}:stack/company-wiki*/*"
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:DescribeTasks
+                  - ecs:ListTasks
+                  - ecs:UpdateService
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    "ecs:cluster": "*company-wiki*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource: !Sub "arn:aws:logs:*:${AWS::AccountId}:log-group:/ecs/company-wiki*"
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - elasticloadbalancing:DescribeTargetGroups
+                  - elasticloadbalancing:DescribeTargetHealth
+                Resource: "*"
+
+Outputs:
+  RoleARN:
+    Description: ARN of the created IAM Role
+    Value: !GetAtt GitHubOIDCRole.Arn
