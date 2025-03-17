@@ -12,9 +12,6 @@ import { marked } from 'marked';
 marked.setOptions({
   gfm: true, // GitHub Flavored Markdown
   breaks: true, // Convert \n to <br>
-  headerIds: true, // Generate IDs for headings
-  mangle: false, // Don't escape HTML
-  sanitize: false, // Don't sanitize HTML
 });
 
 /**
@@ -69,16 +66,23 @@ export function extractFrontmatter(markdown: string): {
       let value = line.slice(colonIndex + 1).trim();
       
       // Handle lists in frontmatter
+      let isArray = false;
       if (value.startsWith('[') && value.endsWith(']')) {
         try {
-          value = value.slice(1, -1).split(',').map(item => item.trim());
+          // Parse as array but store as string with proper type handling at usage sites
+          const parsedArray = value.slice(1, -1).split(',').map(item => item.trim());
+          frontmatter[key] = parsedArray;
+          isArray = true;
         } catch (e) {
           // If parsing fails, keep as string
           console.error('Error parsing frontmatter array:', e);
         }
       }
       
-      frontmatter[key] = value;
+      // Only assign as string if not already assigned as array
+      if (!isArray) {
+        frontmatter[key] = value;
+      }
     }
   });
   
