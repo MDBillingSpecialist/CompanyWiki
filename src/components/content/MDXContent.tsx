@@ -40,8 +40,9 @@ export const MDXContent = ({ content }: MDXContentProps) => {
   
   // Convert any date objects to strings to prevent rendering errors
   if (frontmatter.lastUpdated && typeof frontmatter.lastUpdated === 'object') {
-    if (frontmatter.lastUpdated instanceof Date) {
-      frontmatter.lastUpdated = frontmatter.lastUpdated.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    // Check if it has toISOString method which is characteristic of a Date object
+    if (frontmatter.lastUpdated && typeof (frontmatter.lastUpdated as any).toISOString === 'function') {
+      frontmatter.lastUpdated = (frontmatter.lastUpdated as Date).toISOString().split('T')[0]; // Format as YYYY-MM-DD
     } else {
       frontmatter.lastUpdated = String(frontmatter.lastUpdated);
     }
@@ -49,13 +50,25 @@ export const MDXContent = ({ content }: MDXContentProps) => {
   
   // Render tags safely if they exist
   const renderTags = () => {
-    if (!frontmatter.tags || !Array.isArray(frontmatter.tags) || frontmatter.tags.length === 0) {
+    // Handle both string and array formats for tags
+    let tagsArray: string[] = [];
+    
+    if (frontmatter.tags) {
+      if (Array.isArray(frontmatter.tags)) {
+        tagsArray = frontmatter.tags as string[];
+      } else if (typeof frontmatter.tags === 'string') {
+        // If it's a comma-separated string
+        tagsArray = (frontmatter.tags as string).split(',').map(tag => tag.trim());
+      }
+    }
+    
+    if (tagsArray.length === 0) {
       return null;
     }
     
     return (
       <div className="flex flex-wrap gap-2 mt-4">
-        {frontmatter.tags.map((tag: string) => (
+        {tagsArray.map((tag: string) => (
           <span 
             key={tag}
             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"

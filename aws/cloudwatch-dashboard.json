@@ -1,0 +1,124 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", "ServiceName", "company-wiki-service", "ClusterName", "company-wiki-cluster", { "stat": "Average" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${AWS::Region}",
+        "title": "CPU Utilization",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "MemoryUtilization", "ServiceName", "company-wiki-service", "ClusterName", "company-wiki-cluster", { "stat": "Average" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${AWS::Region}",
+        "title": "Memory Utilization",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 6,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${LoadBalancer.LoadBalancerFullName}", { "stat": "Sum", "period": 60 }],
+          [".", "HTTPCode_Target_2XX_Count", ".", ".", { "stat": "Sum", "period": 60 }],
+          [".", "HTTPCode_Target_4XX_Count", ".", ".", { "stat": "Sum", "period": 60 }],
+          [".", "HTTPCode_Target_5XX_Count", ".", ".", { "stat": "Sum", "period": 60 }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${AWS::Region}",
+        "title": "Request Count and Status Codes",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 12,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${LoadBalancer.LoadBalancerFullName}", { "stat": "Average", "period": 60 }],
+          ["...", { "stat": "p90", "period": 60 }],
+          ["...", { "stat": "p95", "period": 60 }],
+          ["...", { "stat": "p99", "period": 60 }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${AWS::Region}",
+        "title": "Response Times",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 12,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", "${TargetGroup.TargetGroupFullName}", "LoadBalancer", "${LoadBalancer.LoadBalancerFullName}", { "stat": "Average" }],
+          [".", "UnHealthyHostCount", ".", ".", ".", ".", { "stat": "Average" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${AWS::Region}",
+        "title": "Target Health",
+        "period": 300
+      }
+    },
+    {
+      "type": "alarm",
+      "x": 0,
+      "y": 18,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "Alarms",
+        "alarms": [
+          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-cpu-alarm",
+          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-memory-alarm",
+          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-5xx-alarm",
+          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-health-alarm"
+        ]
+      }
+    }
+  ]
+}
