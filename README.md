@@ -6,9 +6,12 @@ A modern, Next.js-based wiki application for company documentation, HIPAA compli
 
 - **Modern Architecture**: Built with Next.js 14, TypeScript, and Tailwind CSS
 - **Content Management**: Markdown/MDX-based content with frontmatter metadata
+- **Full API Support**: RESTful API for content management and search
 - **Navigation**: Intuitive sidebar navigation with collapsible sections and breadcrumbs
 - **Documentation**: Comprehensive HIPAA resources and company SOPs
 - **Responsive Design**: Works well on all devices
+- **Search Functionality**: Full-text search across all content
+- **Testing**: Comprehensive unit, component, and E2E testing
 
 ## Getting Started
 
@@ -54,16 +57,30 @@ yarn dev
 │   ├── /hipaa          # HIPAA compliance documentation
 │   └── /sop            # Standard operating procedures
 ├── /public             # Static assets
+├── /scripts            # Utility scripts
 └── /src
     ├── /app            # Next.js App Router pages
+    │   ├── /api        # API routes
     ├── /components     # React components
-    │   ├── /content    # Content display components
-    │   ├── /layout     # Layout components
-    │   ├── /navigation # Navigation components
-    │   └── /sidebar    # Sidebar components
-    └── /utils          # Utility functions
-        └── mdx.ts      # MDX processing utilities
+    ├── /lib            # Core library code
+    │   ├── /api        # API utilities
+    │   ├── /content    # Content processing
+    │   ├── /files      # File operations
+    │   └── /search     # Search functionality
+    ├── /styles         # Global styles
+    └── /types          # TypeScript definitions
 ```
+
+## API Documentation
+
+The wiki provides a comprehensive API for content management and search. See [API.md](API.md) for detailed documentation.
+
+### Key API Endpoints
+
+- **Content**: `/api/content` - Get content by path, section, or list all
+- **Files**: `/api/files` - List, create, update, and delete files
+- **Upload**: `/api/upload` - Upload files
+- **Search**: `/api/search` - Search content by query or tag
 
 ## Adding New Content
 
@@ -81,6 +98,8 @@ To add new content to the wiki:
    ```
 3. Add your content using Markdown syntax
 4. The file will automatically appear in the navigation sidebar and be accessible via URL
+
+Alternatively, you can use the API to create content programmatically.
 
 ## Content Organization
 
@@ -109,13 +128,6 @@ npm start
 # or
 yarn start
 ```
-
-## Future Enhancements
-
-- Search functionality
-- User authentication
-- Content editing interface
-- API integrations with Monday.com and Microsoft Teams
 
 ## License
 

@@ -9,7 +9,7 @@
  */
 import { WikiLayout } from '@/components/layout/WikiLayout';
 import { MDXContent as MDXContentComponent } from '@/components/content/MDXContent';
-import { getContentBySlug, getAllContentFilePaths } from '@/utils/mdx';
+import { getContentBySlug, getAllContentFilePaths } from '@/lib/content/mdx';
 import { Metadata } from 'next';
 import path from 'path';
 import fs from 'fs';

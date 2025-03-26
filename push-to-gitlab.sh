@@ -1,39 +1,57 @@
 #!/bin/bash
 
-# Script to push Docker image to GitLab registry
+# Script to automatically push Docker image to GitLab registry
 
-echo "This script will help you push the Docker image to GitLab registry"
-echo "Make sure you have created a personal access token with 'write_registry' scope in GitLab"
-echo
+# Exit on any error
+set -e
 
+echo "Automated GitLab Registry Push - Starting"
+echo "----------------------------------------"
+
+# Get GitLab credentials
 GITLAB_USER=$(git config --get user.email || echo "your_gitlab_username")
+GITLAB_TOKEN=${GITLAB_TOKEN:-$CI_JOB_TOKEN}  # Use CI_JOB_TOKEN if available in GitLab CI, otherwise use GITLAB_TOKEN env var
+
+if [ -z "$GITLAB_TOKEN" ]; then
+  # Check if token is stored in Docker config
+  if ! docker info | grep -q "Username: ${GITLAB_USER}"; then
+    echo "Error: GITLAB_TOKEN environment variable not set and not logged in to registry"
+    echo "Either:"
+    echo "  1. Set the GITLAB_TOKEN environment variable: export GITLAB_TOKEN=your_personal_access_token"
+    echo "  2. Log in manually first: docker login registry.gitlab.com -u ${GITLAB_USER}"
+    exit 1
+  else
+    echo "Using existing Docker registry credentials"
+  fi
+else
+  echo "Logging in to GitLab Registry as ${GITLAB_USER}..."
+  echo "$GITLAB_TOKEN" | docker login registry.gitlab.com -u ${GITLAB_USER} --password-stdin
+fi
+
+# Define image names
 IMAGE_NAME="registry.gitlab.com/intelligent-systems-and-development/company-wiki"
 LOCAL_IMAGE="company-wiki-company-wiki:latest"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
-echo "Using GitLab user: ${GITLAB_USER}"
 echo "Local Docker image: ${LOCAL_IMAGE}"
 echo "Target GitLab image: ${IMAGE_NAME}"
-echo
 
-# Ensure the image is tagged properly
+# Tag Docker image
 echo "Tagging Docker image..."
 docker tag ${LOCAL_IMAGE} ${IMAGE_NAME}:latest
-docker tag ${LOCAL_IMAGE} ${IMAGE_NAME}:$(date +%Y%m%d-%H%M%S)
+docker tag ${LOCAL_IMAGE} ${IMAGE_NAME}:${TIMESTAMP}
 
+# Push to GitLab Registry
+echo "Pushing Docker image to GitLab Registry..."
+docker push ${IMAGE_NAME}:latest
+docker push ${IMAGE_NAME}:${TIMESTAMP}
+
+echo "----------------------------------------"
+echo "GitLab Registry push completed successfully!"
+echo "Image is now accessible at: ${IMAGE_NAME}:latest"
+echo "Timestamped tag: ${IMAGE_NAME}:${TIMESTAMP}"
 echo
-echo "To push to GitLab registry, run the following commands:"
-echo
-echo "1. Log in to GitLab registry:"
-echo "   docker login registry.gitlab.com -u ${GITLAB_USER}"
-echo "   (You will be prompted for your personal access token)"
-echo
-echo "2. Push the Docker image to GitLab:"
-echo "   docker push ${IMAGE_NAME}:latest"
-echo "   docker push ${IMAGE_NAME}:$(date +%Y%m%d-%H%M%S)"
-echo
-echo "3. After pushing, you can use the image in GitLab CI/CD by updating .gitlab-ci.yml"
-echo "   The new .gitlab-ci.yml.new file has been prepared for this."
-echo "   To apply it: mv .gitlab-ci.yml.new .gitlab-ci.yml"
-echo
-echo "4. Image will then be accessible at:"
-echo "   ${IMAGE_NAME}:latest"
+echo "AWS deployment will proceed via GitLab CI/CD pipeline when changes are pushed to the repository."
+
+# Make the script executable
+chmod +x $0

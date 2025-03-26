@@ -9,7 +9,7 @@
  * #tags: mdx, content, client-component
  */
 import React from 'react';
-import { MDXContent as MDXContentType } from '@/utils/mdx';
+import { MDXContent as MDXContentType } from '@/lib/content/mdx';
 import '@/styles/markdown.css';
 
 interface MDXContentProps {

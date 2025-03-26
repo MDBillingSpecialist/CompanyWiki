@@ -1,3 +1,11 @@
+/**
+ * Next.js Configuration
+ * 
+ * This file contains the configuration for Next.js.
+ * Previously, this was a bridge file that imported from the config directory.
+ * Now the configuration is directly in this file following Next.js best practices.
+ */
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

@@ -17,17 +17,46 @@ cache:
   paths:
     - node_modules/
 
-# Job to lint and test the code
-test:
+# Jobs to lint and test the code
+lint:
   stage: test
   image: node:18-alpine
   script:
     - npm ci
     - npm run lint
-    # Add tests when available
-    # - npm test
   except:
     - tags
+
+unit_tests:
+  stage: test
+  image: node:18-alpine
+  script:
+    - npm ci
+    - npm test
+  artifacts:
+    paths:
+      - coverage/
+    reports:
+      junit: junit.xml
+  except:
+    - tags
+
+e2e_tests:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.40.0-focal
+  script:
+    - npm ci
+    - npm run build
+    - npm run start & npx wait-on http://localhost:3000
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+      - test-results/
+  only:
+    - main
+    - develop
 
 # Build the application
 build:
@@ -54,19 +83,19 @@ build_docker:
     DOCKER_HOST: tcp://docker:2375
   before_script:
     - docker --version
+    - apk add --no-cache bash git
+    - chmod +x ./push-to-gitlab.sh
   script:
     # Login to GitLab registry
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     
-    # Build and tag the Docker image
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
+    # Build the Docker image with port configuration
+    - docker build --build-arg PORT=3000 -t company-wiki-company-wiki:latest .
     
-    # Push the Docker image to GitLab registry
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY_IMAGE:latest
+    # Use the automated script to push to GitLab registry
+    - CI_JOB_TOKEN=$CI_JOB_TOKEN ./push-to-gitlab.sh
     
-    - echo "Docker image pushed to GitLab registry"
+    - echo "Docker image built and pushed to GitLab registry"
   only:
     - main
     - develop
@@ -81,6 +110,7 @@ deploy_production:
     - docker:dind
   variables:
     DOCKER_HOST: tcp://docker:2375
+    CONTAINER_PORT: 3000
   before_script:
     - amazon-linux-extras install docker
     - aws --version
@@ -129,6 +159,7 @@ deploy_staging:
     ECR_REPOSITORY: company-wiki-staging
     ECS_CLUSTER: company-wiki-cluster-staging
     ECS_SERVICE: company-wiki-service-staging
+    CONTAINER_PORT: 3000
   before_script:
     - amazon-linux-extras install docker
     - aws --version
