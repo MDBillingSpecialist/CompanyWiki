@@ -99,21 +99,27 @@ build_docker:
   before_script:
     - docker --version
     - apk add --no-cache bash git
-    - chmod +x ./push-to-gitlab.sh
   script:
     # Login directly to GitLab registry using CI variables
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     
     # Build the Docker image with port configuration
-    - docker build --build-arg PORT=3000 -t company-wiki:$CI_COMMIT_SHA .
+    - |
+      echo "Building Docker image with the improved Dockerfile..."
+      docker build \
+        --build-arg PORT=3000 \
+        --build-arg NODE_ENV=production \
+        -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA \
+        -t $CI_REGISTRY_IMAGE:latest \
+        .
     
-    # Tag and push directly
-    - docker tag company-wiki:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - docker tag company-wiki:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY_IMAGE:latest
+    # Push to GitLab registry
+    - |
+      echo "Pushing image to GitLab registry..."
+      docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      docker push $CI_REGISTRY_IMAGE:latest
     
-    - 'echo "Docker image successfully built and pushed to GitLab registry: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"'
+    - echo "Docker image successfully built and pushed to GitLab registry: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
   only:
     - main
     - develop
@@ -273,7 +279,7 @@ deploy_production:
   environment:
     name: production
     url: https://$SERVICE_URL
-    on_stop: stop_production
+    on_stop: rollback_production
 
 # Verify production deployment
 verify_production:
@@ -390,33 +396,32 @@ stop_staging:
   only:
     - develop
 
-# Stop production environment
-stop_production:
+# Rollback production deployment
+rollback_production:
   stage: deploy
   image: 
     name: amazon/aws-cli:latest
     entrypoint: [""]
-  variables:
-    GIT_STRATEGY: none
+  before_script:
+    - yum install -y jq git
+    - aws --version
   script:
     # Configure AWS credentials
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
     
-    # Rollback to previous deployment
+    # Clone repository to ensure we have our rollback script
+    - git clone $CI_REPOSITORY_URL ./repo
+    - cd ./repo
+    - git checkout $CI_COMMIT_SHA
+    - chmod +x ./rollback-deployment.sh
+    
+    # Run rollback with our enhanced script
     - |
-      SERVICE_ARN=$(aws apprunner list-services \
-        --query "ServiceSummaryList[?ServiceName=='$APP_RUNNER_SERVICE_PROD'].ServiceArn" \
-        --output text)
-      
-      if [ ! -z "$SERVICE_ARN" ]; then
-        echo "Initiating rollback for App Runner service: $APP_RUNNER_SERVICE_PROD"
-        aws apprunner start-deployment --service-arn $SERVICE_ARN
-        echo "Rollback initiated"
-      else
-        echo "Service not found"
-      fi
+      APP_NAME=$APP_RUNNER_SERVICE_PROD \
+      AWS_REGION=$AWS_DEFAULT_REGION \
+      ./rollback-deployment.sh
   when: manual
   environment:
     name: production

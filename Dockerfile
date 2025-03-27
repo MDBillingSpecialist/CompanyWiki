@@ -29,8 +29,8 @@ RUN echo "Building application..." && \
 
 # Verify the build output
 RUN ls -la .next/ && \
-    echo "Standalone directory:" && \
-    ls -la .next/standalone 2>/dev/null || echo "No standalone directory, this is expected with default build"
+    echo "Checking for standalone directory..." && \
+    ls -la .next/standalone || echo "No standalone directory found, using full .next directory"
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -50,9 +50,16 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Create required directories with proper structure
-RUN mkdir -p /app/public /app/.next/static /app/content /tmp/logs
-RUN chown -R nextjs:nodejs /app /tmp/logs
+# Important: Create ALL directories and set permissions BEFORE switching to non-root user
+RUN mkdir -p /app/public /app/.next/static /app/content /app/logs /tmp/logs && \
+    chown -R nextjs:nodejs /app /tmp/logs
 
+# First copy package.json and install production dependencies
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+RUN npm ci --omit=dev --verbose
+
+# Switch to non-root user for security
 USER nextjs
 
 # Copy server.js - critical for custom server implementation
@@ -60,13 +67,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/server.js ./
 
 # Copy necessary files from the builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-# Copy Next.js standalone if available, otherwise copy the entire .next directory
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./ 2>/dev/null || echo "Copying full .next directory instead"
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/content ./content
-
-# Create logs directory for application logs
-RUN mkdir -p /app/logs && chown -R nextjs:nodejs /app/logs
 
 # Health check - use both our custom health endpoint and the main page as fallback
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
