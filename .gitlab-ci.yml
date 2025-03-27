@@ -209,9 +209,9 @@ setup_monitoring:
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
     - yum install -y jq
-    - cat aws/cloudwatch-alarms.yml | sed "s/NotificationEmail: admin@example.com/NotificationEmail: monitoring@example.com/g" > alarms.yml
+    - 'cat aws/cloudwatch-alarms.yml | sed "s/NotificationEmail: admin@example.com/NotificationEmail: monitoring@example.com/g" > alarms.yml'
     - aws cloudformation deploy --template-file alarms.yml --stack-name company-wiki-alarms --capabilities CAPABILITY_IAM
-    - cat aws/cloudwatch-dashboard.json | sed "s/\${ServiceName}/company-wiki/g" > dashboard.json
+    - 'cat aws/cloudwatch-dashboard.json | sed "s/\${ServiceName}/company-wiki/g" > dashboard.json'
     - aws cloudwatch put-dashboard --dashboard-name company-wiki-dashboard --dashboard-body file://dashboard.json
   only:
     - main
