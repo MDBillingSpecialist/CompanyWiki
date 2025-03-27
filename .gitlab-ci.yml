@@ -113,6 +113,8 @@ docker_build:
 deploy_staging:
   stage: deploy
   image: amazon/aws-cli:latest
+  variables:
+    CI: "true"
   needs:
     - build
     - docker_build
@@ -125,8 +127,11 @@ deploy_staging:
     - APP_NAME=$APP_RUNNER_SERVICE_STAGING AWS_REGION=$AWS_DEFAULT_REGION CPU=$CPU_STAGING MEMORY=$MEMORY_STAGING BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
     - SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_RUNNER_SERVICE_STAGING'].ServiceArn" --output text)
     - SERVICE_URL=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query "Service.ServiceUrl" --output text)
-    - echo "SERVICE_URL=$SERVICE_URL" >> deploy.env
+    - echo "SERVICE_URL=$SERVICE_URL" > deploy.env
+    - cat deploy.env
   artifacts:
+    paths:
+      - deploy.env
     reports:
       dotenv: deploy.env
   environment:
@@ -154,6 +159,8 @@ verify_staging:
 deploy_production:
   stage: deploy
   image: amazon/aws-cli:latest
+  variables:
+    CI: "true"
   needs:
     - build
     - docker_build
@@ -166,13 +173,16 @@ deploy_production:
     - APP_NAME=$APP_RUNNER_SERVICE_PROD AWS_REGION=$AWS_DEFAULT_REGION CPU=$CPU_PROD MEMORY=$MEMORY_PROD BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
     - SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_RUNNER_SERVICE_PROD'].ServiceArn" --output text)
     - SERVICE_URL=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query "Service.ServiceUrl" --output text)
-    - echo "SERVICE_URL=$SERVICE_URL" >> deploy.env
+    - echo "SERVICE_URL=$SERVICE_URL" > deploy.env
+    - cat deploy.env
     - git config --global user.email "gitlab-ci@example.com"
     - git config --global user.name "GitLab CI"
     - TIMESTAMP=$(date +%Y%m%d%H%M%S)
     - git tag "deploy-prod-$TIMESTAMP"
     - git push https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git "deploy-prod-$TIMESTAMP"
   artifacts:
+    paths:
+      - deploy.env
     reports:
       dotenv: deploy.env
   environment:

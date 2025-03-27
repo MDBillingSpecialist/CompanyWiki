@@ -107,19 +107,24 @@ if [ ! -d "node_modules" ]; then
   npm ci
 fi
 
-# Run tests to ensure application works
-log "Running tests to validate application..."
-npm run test || {
-  warn "Some tests failed, but continuing with deployment..."
-}
+# Skip tests in CI environment
+if [ -z "$CI" ]; then
+  # Run tests to ensure application works
+  log "Running tests to validate application..."
+  npm run test || {
+    warn "Some tests failed, but continuing with deployment..."
+  }
 
-# Build the application locally to verify it builds successfully
-log "Building application to verify build process..."
-npm run build || {
-  error "Build failed! Please fix build errors before deploying."
-  exit 1
-}
-success "Build successful."
+  # Build the application locally to verify it builds successfully
+  log "Building application to verify build process..."
+  npm run build || {
+    error "Build failed! Please fix build errors before deploying."
+    exit 1
+  }
+  success "Build successful."
+else
+  log "Skipping tests and build verification in CI environment..."
+fi
 
 # Create deployment package
 DEPLOY_DIR=$(mktemp -d)
