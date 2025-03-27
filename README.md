@@ -133,11 +133,37 @@ yarn start
 
 ### AWS Deployment
 
-The application is set up for deployment to AWS App Runner. There are multiple options for deployment:
+The application is set up for deployment to AWS App Runner with multiple deployment options:
 
-1. **GitHub Actions**: Automatic deployment when pushing to the main branch
-2. **Deployment Script**: Use the `deploy-aws.sh` script for CLI-based deployment
-3. **Manual AWS Console**: Deploy through the AWS App Runner console
+#### 1. GitHub-based Deployment
+For deploying directly from a GitHub repository:
+```bash
+./aws/create-new-app-github.sh
+```
+This method:
+- Creates a GitHub connection (requires manual authentication in AWS console)
+- Deploys directly from your GitHub repository
+- Uses the configuration in apprunner.yaml
+
+#### 2. ECR-based Deployment
+For deploying using Docker and Amazon ECR:
+```bash
+./aws/setup-ecr-deployment.sh
+```
+This method:
+- Builds and pushes a Docker image to Amazon ECR
+- Creates an App Runner service using the container image
+- Does not require a GitHub connection
+
+#### 3. GitLab CI/CD Pipeline
+For automatic deployments via GitLab CI/CD:
+- Push to the `develop` branch to deploy to staging
+- Push to the `main` branch to trigger production deployment (manual approval required)
+
+#### Deployment Prerequisites
+- AWS CLI installed and configured with appropriate credentials
+- Docker installed (for ECR deployment)
+- Appropriate IAM permissions to create roles and App Runner services
 
 For detailed deployment instructions, see [AWS Deployment Steps](docs/AWS_DEPLOYMENT_STEPS.md).
 
