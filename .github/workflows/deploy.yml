@@ -1,13 +1,23 @@
-name: Deploy to AWS App Runner
+name: Deploy Company Wiki
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
 
-env:
-  NODE_VERSION: '18'
-  AWS_REGION: 'us-east-1'  # Change to your region
+permissions:
+  id-token: write  # Required for OIDC authentication with AWS
+  contents: read   # Required to checkout the repository
 
 jobs:
   test:
@@ -20,96 +30,205 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Run linting
+        run: npm run lint
 
-  deploy:
-    name: Deploy to AWS
+      - name: Run tests
+        run: npm run test
+        
+      - name: Store test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            junit.xml
+            coverage/
+          retention-days: 5
+
+  build:
+    name: Build
     needs: test
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+        
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '18'
           cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            .next/
+            public/
+            content/
+            package.json
+            package-lock.json
+            next.config.js
+            server.js
+            apprunner.yaml
+          retention-days: 1
 
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build
+    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Create/Update App Runner Service
-        id: create-service
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      - name: Install AWS CLI
         run: |
-          APP_NAME="company-wiki"
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
           
-          # Check if service exists
-          SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_NAME'].ServiceArn" --output text)
-          
-          if [ -z "$SERVICE_ARN" ]; then
-            # Create service if it doesn't exist
-            echo "Creating new App Runner service..."
-            aws apprunner create-service \
-              --service-name "$APP_NAME" \
-              --source-configuration '{
-                "CodeRepository": {
-                  "RepositoryUrl": "https://github.com/${{ github.repository }}",
-                  "SourceCodeVersion": {
-                    "Type": "BRANCH",
-                    "Value": "main"
-                  },
-                  "CodeConfiguration": {
-                    "ConfigurationSource": "REPOSITORY"
-                  }
-                },
-                "AutoDeploymentsEnabled": true
-              }' \
-              --instance-configuration '{
-                "Cpu": "1 vCPU",
-                "Memory": "2 GB"
-              }' \
-              --health-check-configuration '{
-                "Protocol": "HTTP",
-                "Path": "/",
-                "Interval": 10,
-                "Timeout": 5,
-                "HealthyThreshold": 3,
-                "UnhealthyThreshold": 5
-              }' \
-              --region ${{ env.AWS_REGION }}
-          else
-            # Start deployment for existing service
-            echo "Triggering deployment for existing App Runner service..."
-            aws apprunner start-deployment \
-              --service-arn "$SERVICE_ARN" \
-              --region ${{ env.AWS_REGION }}
-          fi
-          
-          # Wait for service to be updated
-          echo "Waiting for service to be created/updated..."
-          sleep 30
-          
-          # Get service URL
-          SERVICE_URL=$(aws apprunner describe-service --service-arn $SERVICE_ARN --query "Service.ServiceUrl" --output text || echo "URL not available yet")
-          echo "Service URL: $SERVICE_URL"
-          echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
-
-      - name: Output Service URL
+      - name: Deploy to AWS App Runner
         run: |
-          echo "Service deployed successfully!"
-          echo "Service URL: https://${{ steps.create-service.outputs.service_url }}"
+          APP_NAME=company-wiki-staging \
+          AWS_REGION=${{ secrets.AWS_REGION }} \
+          ./deploy-aws.sh
+          
+      - name: Verify deployment
+        run: |
+          # Wait for deployment to complete (up to 5 minutes)
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          
+          SERVICE_ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='company-wiki-staging'].ServiceArn" \
+            --output text \
+            --region ${{ secrets.AWS_REGION }})
+            
+          until aws apprunner describe-service \
+            --service-arn "$SERVICE_ARN" \
+            --query "Service.Status" \
+            --output text \
+            --region ${{ secrets.AWS_REGION }} | grep -q "RUNNING"; do
+            
+            ATTEMPT=$((ATTEMPT+1))
+            if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
+              echo "Deployment timed out"
+              exit 1
+            fi
+            
+            echo "Waiting for deployment to complete... ($ATTEMPT/$MAX_ATTEMPTS)"
+            sleep 10
+          done
+          
+          # Run verification script
+          SERVICE_URL=$(aws apprunner describe-service \
+            --service-arn "$SERVICE_ARN" \
+            --query "Service.ServiceUrl" \
+            --output text \
+            --region ${{ secrets.AWS_REGION }})
+            
+          SERVICE_URL=$SERVICE_URL ./verify-deployment.sh
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [build, deploy-staging]
+    if: github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+          
+      - name: Deploy to AWS App Runner
+        run: |
+          APP_NAME=company-wiki \
+          AWS_REGION=${{ secrets.AWS_REGION }} \
+          CPU="2 vCPU" \
+          MEMORY="4 GB" \
+          ./deploy-aws.sh
+          
+      - name: Verify deployment
+        run: |
+          # Wait for deployment to complete (up to 5 minutes)
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          
+          SERVICE_ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='company-wiki'].ServiceArn" \
+            --output text \
+            --region ${{ secrets.AWS_REGION }})
+            
+          until aws apprunner describe-service \
+            --service-arn "$SERVICE_ARN" \
+            --query "Service.Status" \
+            --output text \
+            --region ${{ secrets.AWS_REGION }} | grep -q "RUNNING"; do
+            
+            ATTEMPT=$((ATTEMPT+1))
+            if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
+              echo "Deployment timed out"
+              exit 1
+            fi
+            
+            echo "Waiting for deployment to complete... ($ATTEMPT/$MAX_ATTEMPTS)"
+            sleep 10
+          done
+          
+          # Run verification script
+          SERVICE_URL=$(aws apprunner describe-service \
+            --service-arn "$SERVICE_ARN" \
+            --query "Service.ServiceUrl" \
+            --output text \
+            --region ${{ secrets.AWS_REGION }})
+            
+          SERVICE_URL=$SERVICE_URL ./verify-deployment.sh
+          
+      - name: Create deploy tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          git tag "deploy-prod-$TIMESTAMP"
+          git push origin "deploy-prod-$TIMESTAMP"

@@ -2,6 +2,24 @@
 
 This document provides detailed steps to deploy the Company Wiki to AWS App Runner.
 
+## Deployment Architecture
+
+The Company Wiki is deployed as a Node.js application running in AWS App Runner. The application uses:
+
+- **Next.js**: Frontend and API routes
+- **Custom server.js**: Production Node.js server 
+- **AWS App Runner**: Managed container service
+- **CloudWatch**: Logging and monitoring
+
+### Deployment Safeguards
+
+The deployment includes several safeguards to prevent and diagnose issues:
+
+1. **Health Check Endpoint**: `/health` provides detailed diagnostics
+2. **Extensive Logging**: Server.js logs important diagnostic information 
+3. **Content Verification**: Checks for content directories at startup
+4. **Memory Management**: Optimized Node.js memory settings for AWS
+
 ## Prerequisites
 
 1. **AWS Account** with appropriate permissions

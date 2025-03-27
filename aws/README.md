@@ -1,150 +1,118 @@
-# AWS Deployment Guide for Company Wiki
+# AWS Deployment for Company Wiki
 
-This guide explains how to deploy the Company Wiki application to AWS using CloudFormation, ECS, and GitLab CI/CD.
+This directory contains all the AWS infrastructure configuration files and utilities for deploying the Company Wiki application to AWS.
 
-## Prerequisites
+## Overview
 
-1. AWS CLI installed and configured with appropriate permissions
-2. AWS IAM Role for GitLab CI/CD with permissions for:
-   - ECR
-   - ECS
-   - CloudFormation
-   - CloudWatch
-   - IAM (for service roles)
-   - Route53
-   - VPC
-   - Load Balancer
+The deployment infrastructure has been designed with the following principles:
 
-3. SSL Certificate in AWS Certificate Manager for your domain
-4. Registered domain name in Route53
+1. **Reliability** - Redundant systems and robust error handling
+2. **Scalability** - Auto-scaling based on load metrics
+3. **Observability** - Comprehensive monitoring and alerting
+4. **Security** - HTTPS-only access and principle of least privilege
+5. **Cost Efficiency** - Resource-appropriate sizing and idle cost reduction
 
-## CloudFormation Templates
+## Deployment Options
 
-The `cloudformation.yml` file defines the following AWS resources:
+### Option 1: AWS App Runner (Recommended)
 
-- Amazon ECR Repository for Docker images
-- Amazon ECS Cluster, Task Definition, and Service
-- Application Load Balancer with HTTPS support
-- Auto Scaling configuration
-- CloudWatch Logs group
-- IAM Roles and Security Groups
-- Route53 DNS records
+The simplest deployment method using `deploy-aws.sh` script. App Runner automatically handles:
 
-## Deployment Process
+- Building and deploying from source code
+- Auto-scaling based on traffic
+- Load balancing
+- HTTPS termination
+- Health checks
 
-### 1. Set up GitLab CI/CD Variables
+#### Configuration Files:
+- `apprunner.yaml` - Defines build and runtime configuration
+- `server.js` - Custom server implementation with health checks
 
-Add the following variables to your GitLab repository:
+### Option 2: ECS with CloudFormation
 
-- `AWS_ACCESS_KEY_ID`: Access key for AWS IAM user
-- `AWS_SECRET_ACCESS_KEY`: Secret access key for AWS IAM user
-- `AWS_ACCOUNT_ID`: Your AWS account ID
-- `AWS_DEFAULT_REGION`: AWS region (e.g., us-east-1)
+For more advanced infrastructure needs, a complete CloudFormation stack:
 
-### 2. Create IAM Role for GitLab CI/CD
+#### Configuration Files:
+- `cloudformation.yml` - Main infrastructure stack
+- `cloudwatch-alarms.yml` - Monitoring and alerting
+- `cloudwatch-dashboard.json` - Visual monitoring dashboard
+- `github-oidc-role.yml` - IAM role for CI/CD integration
 
-Use the `gitlab-iam-role.yml` template to create an IAM role with the necessary permissions:
+## Deployment Utilities
 
-```bash
-aws cloudformation create-stack \
-  --stack-name gitlab-cicd-role \
-  --template-body file://gitlab-iam-role.yml \
-  --parameters \
-    ParameterKey=GitLabAccountId,ParameterValue=GITLAB_AWS_ACCOUNT_ID \
-  --capabilities CAPABILITY_NAMED_IAM
-```
+### Scripts
 
-### 3. Create SSL Certificate
+1. **deploy-aws.sh**
+   - Main deployment script for App Runner
+   - Handles all aspects of provisioning/updating
+   - Configurable via environment variables
 
-1. Create a certificate in AWS Certificate Manager for your domain
-2. Ensure certificate is in the `us-east-1` region if using CloudFront, or in the deployment region otherwise
+2. **verify-deployment.sh**
+   - Post-deployment validation
+   - Checks multiple endpoints and functionality
+   - Reports results in an easy-to-understand format
 
-### 4. Deploy Infrastructure
+3. **rollback-deployment.sh**
+   - Emergency rollback to previous deployment
+   - Minimal downtime recovery path
+   - Can be triggered automatically or manually
 
-```bash
-# Get your VPC ID
-aws ec2 describe-vpcs
+## Monitoring and Alerting
 
-# Get your subnet IDs
-aws ec2 describe-subnets
+The deployment includes comprehensive monitoring:
 
-# Deploy the CloudFormation stack
-aws cloudformation create-stack \
-  --stack-name company-wiki \
-  --template-body file://cloudformation.yml \
-  --parameters \
-    ParameterKey=VpcId,ParameterValue=vpc-xxxxxxxx \
-    ParameterKey=Subnets,ParameterValue=subnet-xxxxxxxx,subnet-yyyyyyyy \
-    ParameterKey=DomainName,ParameterValue=wiki.yourcompany.com \
-    ParameterKey=CertificateArn,ParameterValue=arn:aws:acm:region:account-id:certificate/xxxxxxxx \
-  --capabilities CAPABILITY_IAM
-```
+1. **CloudWatch Dashboard**
+   - Real-time metrics visualization
+   - Consolidated view of all application components
+   - Custom metrics for business KPIs
 
-### 5. GitLab CI/CD Pipeline
+2. **CloudWatch Alarms**
+   - CPU/Memory utilization alerts
+   - Error rate monitoring
+   - Response time thresholds
+   - Health check status notifications
 
-The `.gitlab-ci.yml` file defines the CI/CD pipeline with the following stages:
+## CI/CD Integration
 
-1. Build: Builds the Next.js application
-2. Test: Runs linting and tests
-3. Deploy: Builds and pushes the Docker image to ECR, then deploys to ECS
+The AWS infrastructure integrates with GitLab CI/CD via:
 
-For production deployment, push to the `main` branch.
-For staging deployment, push to the `develop` branch.
+1. **IAM Role-based Authentication**
+   - Secure, temporary credentials
+   - No hardcoded secrets in CI/CD pipeline
 
-## Monitoring
+2. **Multi-environment Support**
+   - Staging and production environments
+   - Isolated resources per environment
+   - Manual promotion between environments
 
-The `cloudwatch-dashboard.json` file defines a comprehensive dashboard for monitoring:
+## Security Measures
 
-- CPU and Memory Utilization
-- Request counts and HTTP status codes
-- Response times
-- Target health
-- CloudWatch Alarms
+1. **HTTPS Everywhere**
+   - TLS 1.2+ for all traffic
+   - HTTP to HTTPS redirection
 
-To create the dashboard:
+2. **IAM Least Privilege**
+   - Service-specific roles with minimal permissions
+   - Temporary credentials for deployments
 
-```bash
-aws cloudwatch put-dashboard \
-  --dashboard-name company-wiki-dashboard \
-  --dashboard-body file://cloudwatch-dashboard.json
-```
-
-## Alarms and Notifications
-
-Deploy CloudWatch alarms to receive notifications for critical events:
-
-```bash
-aws cloudformation create-stack \
-  --stack-name company-wiki-alarms \
-  --template-body file://cloudwatch-alarms.yml \
-  --parameters \
-    ParameterKey=NotificationEmail,ParameterValue=your-email@example.com
-```
-
-## Troubleshooting
-
-- **Deployment Failures**: Check CloudWatch Logs at `/ecs/company-wiki`
-- **Container Health Issues**: Check the ECS Task health and events in the AWS Console
-- **Load Balancer Issues**: Verify target group health and listener configuration
-- **CI/CD Pipeline Issues**: Review the GitLab CI/CD pipeline logs
+3. **Network Security**
+   - Security groups with restricted access
+   - Internal services not exposed to internet
 
 ## Cost Optimization
 
-This setup uses Fargate Spot instances alongside regular Fargate to reduce costs. You can adjust the capacity provider weights in the CloudFormation template to control the mix.
+1. **Auto-scaling**
+   - Scale down during low traffic periods
+   - Scale up to handle traffic spikes
 
-## Security Considerations
+2. **Resource Right-sizing**
+   - Different resource allocations for staging/production
+   - Optimized memory/CPU ratios for Node.js
 
-- The configuration includes security headers on the load balancer
-- All traffic is redirected to HTTPS
-- Containers run as non-root users
-- IAM roles follow the principle of least privilege
+3. **App Runner Pause Feature**
+   - Pause services during extended idle periods
+   - Resume automatically on traffic
 
-## Cleanup
+## Usage Instructions
 
-To remove all resources:
-
-```bash
-aws cloudformation delete-stack --stack-name company-wiki
-aws cloudformation delete-stack --stack-name company-wiki-alarms
-aws cloudformation delete-stack --stack-name gitlab-cicd-role
-```
+See the main [DEPLOYMENT.md](../DEPLOYMENT.md) document for detailed deployment instructions and examples.

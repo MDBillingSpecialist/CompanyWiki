@@ -1,9 +1,19 @@
 {
   "widgets": [
     {
-      "type": "metric",
+      "type": "text",
       "x": 0,
       "y": 0,
+      "width": 24,
+      "height": 1,
+      "properties": {
+        "markdown": "# Company Wiki Monitoring Dashboard\nThis dashboard provides comprehensive monitoring for the Company Wiki application deployed on AWS App Runner and ECS."
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 1,
       "width": 12,
       "height": 6,
       "properties": {
@@ -13,20 +23,34 @@
         "view": "timeSeries",
         "stacked": false,
         "region": "${AWS::Region}",
-        "title": "CPU Utilization",
+        "title": "ECS CPU Utilization",
         "period": 300,
         "yAxis": {
           "left": {
             "min": 0,
             "max": 100
           }
+        },
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning",
+              "value": 75,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical",
+              "value": 90,
+              "color": "#d13212"
+            }
+          ]
         }
       }
     },
     {
       "type": "metric",
       "x": 12,
-      "y": 0,
+      "y": 1,
       "width": 12,
       "height": 6,
       "properties": {
@@ -36,20 +60,34 @@
         "view": "timeSeries",
         "stacked": false,
         "region": "${AWS::Region}",
-        "title": "Memory Utilization",
+        "title": "ECS Memory Utilization",
         "period": 300,
         "yAxis": {
           "left": {
             "min": 0,
             "max": 100
           }
+        },
+        "annotations": {
+          "horizontal": [
+            {
+              "label": "Warning",
+              "value": 75,
+              "color": "#ff9900"
+            },
+            {
+              "label": "Critical",
+              "value": 90,
+              "color": "#d13212"
+            }
+          ]
         }
       }
     },
     {
       "type": "metric",
       "x": 0,
-      "y": 6,
+      "y": 7,
       "width": 24,
       "height": 6,
       "properties": {
@@ -69,7 +107,7 @@
     {
       "type": "metric",
       "x": 0,
-      "y": 12,
+      "y": 13,
       "width": 12,
       "height": 6,
       "properties": {
@@ -89,7 +127,7 @@
     {
       "type": "metric",
       "x": 12,
-      "y": 12,
+      "y": 13,
       "width": 12,
       "height": 6,
       "properties": {
@@ -105,19 +143,105 @@
       }
     },
     {
-      "type": "alarm",
+      "type": "metric",
       "x": 0,
-      "y": 18,
+      "y": 19,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/AppRunner", "ProcessingTime", "ServiceName", "${ServiceName}", { "stat": "Average" }],
+          [".", "RequestCount", ".", ".", { "stat": "Sum" }]
+        ],
+        "region": "${AWS::Region}",
+        "title": "App Runner Request Statistics",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 19,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/AppRunner", "5xxErrorPercentage", "ServiceName", "${ServiceName}", { "stat": "Average" }],
+          [".", "4xxErrorPercentage", ".", ".", { "stat": "Average" }]
+        ],
+        "region": "${AWS::Region}",
+        "title": "App Runner Error Rates",
+        "period": 300
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 25,
       "width": 24,
       "height": 6,
       "properties": {
-        "title": "Alarms",
+        "query": "SOURCE '/aws/apprunner/${ServiceName}/application' | fields @timestamp, @message\n| filter @message like /ERROR/ or @message like /WARN/\n| sort @timestamp desc\n| limit 20",
+        "region": "${AWS::Region}",
+        "title": "Recent Error Logs",
+        "view": "table"
+      }
+    },
+    {
+      "type": "alarm",
+      "x": 0,
+      "y": 31,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "title": "CloudWatch Alarms",
         "alarms": [
           "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-cpu-alarm",
           "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-memory-alarm",
           "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-5xx-alarm",
-          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-health-alarm"
+          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-health-alarm",
+          "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:company-wiki-response-alarm"
         ]
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 37,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/AppRunner", "InstanceResponseTime", "ServiceName", "${ServiceName}", "Path", "/health", { "stat": "Average" }],
+          ["...", { "stat": "p90" }]
+        ],
+        "region": "${AWS::Region}",
+        "title": "Health Endpoint Response Time",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 37,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "view": "timeSeries",
+        "stacked": false,
+        "metrics": [
+          ["AWS/AppRunner", "InstanceResponseTime", "ServiceName", "${ServiceName}", "Path", "/api/content", { "stat": "Average" }],
+          ["...", { "stat": "p90" }]
+        ],
+        "region": "${AWS::Region}",
+        "title": "API Endpoint Response Time",
+        "period": 300
       }
     }
   ]

@@ -1,150 +1,172 @@
-# HIPAA Wiki Deployment Guide
+# Company Wiki Deployment Guide
 
-This document outlines the deployment process for the HIPAA Wiki application.
+This document provides comprehensive instructions for deploying the Company Wiki application to AWS infrastructure.
+
+## Deployment Options
+
+The Company Wiki can be deployed using two primary methods:
+
+1. **AWS App Runner** (Recommended) - Simplified deployment with minimal configuration
+2. **ECS with CloudFormation** - Advanced deployment with more customization options
 
 ## Prerequisites
 
-- Docker installed on your local machine
-- Access to GitLab repository with proper permissions
-- (Optional) AWS CLI configured if deploying to AWS
+Before deploying, ensure you have:
 
-## Local Deployment
+- AWS CLI installed and configured with appropriate permissions
+- Node.js 18.x or later
+- Docker installed locally (for testing container builds)
+- Access to the company's AWS account
 
-### Running with Docker Compose
+## Basic Deployment with AWS App Runner
 
-1. Build the Docker image:
-   ```
-   docker-compose build
-   ```
+The simplest way to deploy the application is using the provided deployment script, which automates the AWS App Runner setup:
 
-2. Start the container:
-   ```
-   docker-compose up -d
-   ```
+```bash
+# Deploy to AWS App Runner (default configuration)
+./deploy-aws.sh
 
-3. Access the application at http://localhost:3005
+# Deploy with custom configuration
+AWS_REGION=us-west-2 APP_NAME=my-wiki-instance ./deploy-aws.sh
+```
 
-4. Stop the container:
-   ```
-   docker-compose down
-   ```
+### App Runner Configuration Options
 
-## GitLab Registry Deployment
+The `apprunner.yaml` file controls how the application is built and run:
 
-The project includes an automated script to push Docker images to GitLab Container Registry:
+- **Build Commands**: Customize the build process in the `build` section
+- **Runtime Settings**: Modify Node.js version and environment variables in the `run` section
+- **Health Checks**: Configure the health check behavior and endpoints
+- **Resource Allocation**: Modify CPU and memory allocation
 
-1. Configure GitLab authentication (one of the following methods):
-   - Set the `GITLAB_TOKEN` environment variable: 
-     ```
-     export GITLAB_TOKEN=your_personal_access_token
-     ```
-   - Log in manually first (credentials will be stored): 
-     ```
-     docker login registry.gitlab.com -u your_gitlab_username
-     ```
-   - In GitLab CI, the script automatically uses the available token
+## Advanced Deployment with CloudFormation
 
-2. Run the automated script:
-   ```
-   ./push-to-gitlab.sh
-   ```
+For more control over the infrastructure, use the CloudFormation templates:
 
-3. The script will:
-   - Authenticate with GitLab Registry
-   - Tag the Docker image with latest and timestamp tags
-   - Push the images to GitLab Registry
-   - Output confirmation when complete
+```bash
+# Deploy the full stack
+aws cloudformation deploy \
+  --template-file aws/cloudformation.yml \
+  --stack-name company-wiki \
+  --parameter-overrides VpcId=vpc-123456 Subnets=subnet-123,subnet-456 \
+  --capabilities CAPABILITY_IAM
+```
 
-4. Once the image is pushed to GitLab Registry, the CI/CD pipeline will automatically deploy to AWS when code changes are pushed to the repository.
+The CloudFormation deployment creates:
+- ECR Repository for container images
+- ECS Cluster and Service
+- Load Balancer with HTTPS support
+- Auto-scaling configuration
+- CloudWatch Logs and Alarms
+- IAM Roles and Policies
 
-## AWS Deployment Options
+## Monitoring and Alarms
 
-The project can be deployed to AWS using either AWS App Runner or ECS.
+The deployment includes CloudWatch alarms and a monitoring dashboard:
 
-### AWS App Runner Deployment (Recommended)
+```bash
+# Deploy CloudWatch alarms
+aws cloudformation deploy \
+  --template-file aws/cloudwatch-alarms.yml \
+  --stack-name company-wiki-alarms \
+  --parameter-overrides NotificationEmail=alerts@example.com
 
-AWS App Runner provides a simplified deployment experience with automatic scaling and health checks:
+# Create dashboard
+aws cloudwatch put-dashboard \
+  --dashboard-name company-wiki-dashboard \
+  --dashboard-body file://aws/cloudwatch-dashboard.json
+```
 
-1. Ensure the following environment variables are set in GitLab CI/CD:
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-   - `AWS_ACCOUNT_ID`
-   - `AWS_DEFAULT_REGION`
+## Verification and Rollback
 
-2. Use the provided `apprunner.yaml` configuration file for direct deployment:
-   ```
-   aws apprunner create-service --source-configuration sourceCodeUrl=YOUR_REPO_URL,configurationSource=REPOSITORY --auto-deployments-enabled
-   ```
+After deployment, verify the application is running correctly:
 
-3. For ECR-based deployment:
-   - Push the image to AWS ECR
-   - Create an App Runner service that uses the ECR image
-   - Use the following settings:
-     - Port: 3000
-     - Health check path: /
-     - Health check protocol: HTTP
+```bash
+# Verify deployment
+./verify-deployment.sh
 
-### AWS ECS Deployment (Alternative)
+# If issues are found, perform a rollback
+./rollback-deployment.sh
+```
 
-For more control over the infrastructure, ECS deployment is available:
+## Custom Domain Configuration
 
-1. Ensure the same environment variables are set as above.
+To use a custom domain with the deployment:
 
-2. The pipeline will:
-   - Pull the image from GitLab Registry
-   - Push it to AWS ECR
-   - Update the ECS service to use the new image
-   
-3. Use the CloudFormation template in `aws/cloudformation.yml` for full infrastructure setup
+1. Create a certificate in AWS Certificate Manager
+2. Update the CloudFormation template with your domain name and certificate ARN
+3. Configure DNS records to point to the created load balancer
 
-## Port Configuration
+## Security Considerations
 
-The application is configured to handle port mapping properly between local development and AWS deployment:
+The deployment includes several security features:
 
-1. **Container Internal Port**: The application runs on port 3000 inside the container
-2. **Local Development**: Docker Compose maps port 3005 on the host to port 3000 in the container
-3. **AWS ECS**: The container port 3000 is exposed to the load balancer
-
-This port configuration ensures consistency between local and AWS environments. The PORT environment variable is explicitly set to 3000 in the container to avoid any port-related issues.
-
-## Configuration
-
-The application has the following configuration options:
-
-### Environment Variables
-
-- `NODE_ENV` - Set to 'production' for production deployments
-- `PORT` - Set to 3000 for the container's internal port
-- Additional environment variables can be added to `docker-compose.yml`
-
-### .gitlab-ci.yml
-
-The CI/CD pipeline is configured in `.gitlab-ci.yml` and includes:
-- Building the Docker image
-- Pushing to GitLab Registry
-- Deploying to AWS ECS (production and staging)
+- HTTPS-only access with TLS 1.2+
+- IAM role-based access for services
+- Security groups with minimal access
+- Health checks to detect and replace unhealthy instances
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **Health check failing**: Check if the application is running inside the container:
-  ```
-  docker-compose logs
-  ```
+1. **Deployment Fails**: Check CloudWatch Logs for build or runtime errors
+2. **Health Checks Failing**: Verify the application can serve the /health endpoint
+3. **Performance Issues**: Check CloudWatch metrics for resource utilization
 
-- **Container not starting**: Verify Docker is running and port 3005 is available:
-  ```
-  docker ps
-  lsof -i :3005
-  ```
+### Log Access
 
-- **AWS deployment issues**: Check AWS logs and ensure proper permissions for ECR and ECS.
+Access logs through:
+
+```bash
+# For App Runner logs
+aws logs get-log-events \
+  --log-group-name aws/apprunner/company-wiki/application \
+  --log-stream-name instance/1234/application
+  
+# For ECS logs
+aws logs get-log-events \
+  --log-group-name /ecs/company-wiki \
+  --log-stream-name company-wiki/1234abcd
+```
 
 ## Maintenance
 
-- Regularly update dependencies by running `npm update` and rebuilding the Docker image.
-- Check for security updates in the Node.js base image.
-- Monitor application logs for errors or warnings.
+### Scheduled Updates
 
-For additional support, contact the development team.
+We recommend scheduling regular maintenance and updates:
+
+1. Test changes in a staging environment
+2. Deploy during low-traffic periods
+3. Monitor closely after updates
+4. Use the rollback script if issues occur
+
+### Scaling Considerations
+
+The application will auto-scale based on CPU utilization. To modify scaling behavior:
+
+1. Edit the CloudFormation template
+2. Adjust the `TargetValue` parameter in the `AutoScalingPolicy` resource
+3. Modify the `MaxCapacity` parameter to set upper limits
+
+## Deployment Architecture
+
+The deployed application follows this architecture:
+
+```
+User Request → CloudFront (optional) → ALB → ECS/App Runner → Application
+                                              ↓
+                             CloudWatch Logs & Metrics → Alarms
+```
+
+## Support and Maintenance
+
+For deployment issues, contact:
+- DevOps Team: devops@example.com
+- Cloud Support: cloud-support@example.com
+
+## Further Resources
+
+- [AWS App Runner Documentation](https://docs.aws.amazon.com/apprunner/)
+- [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
+- [CloudFormation Documentation](https://docs.aws.amazon.com/cloudformation/)
