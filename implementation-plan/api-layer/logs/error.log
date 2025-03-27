@@ -6,3 +6,9 @@
 [31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
 [31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
 [31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
+[31m2025-03-27 22:35:39:3539 error: Wiki API Error:[39m
+[31m2025-03-27 22:35:39:3539 error: Login to Wiki.js failed:[39m
+[31m2025-03-27 22:35:39:3539 error: Failed to login to Wiki.js during service initialization:[39m
+[31m2025-03-27 22:36:23:3623 error: Wiki API Error:[39m
+[31m2025-03-27 22:36:23:3623 error: Login to Wiki.js failed:[39m
+[31m2025-03-27 22:36:23:3623 error: Failed to login to Wiki.js during service initialization:[39m

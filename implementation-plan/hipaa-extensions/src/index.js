@@ -36,7 +36,7 @@ const sequelize = new Sequelize({
   host: process.env.DB_HOST || 'db',
   port: process.env.DB_PORT || 5432,
   username: process.env.DB_USER || 'wikijs',
-  password: process.env.DB_PASS || 'wikijs',
+  password: process.env.DB_PASS || 'wikijs_password',
   database: process.env.DB_NAME || 'wiki',
   logging: msg => logger.debug(msg)
 });

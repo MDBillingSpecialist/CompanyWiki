@@ -10,8 +10,11 @@ variables:
   ECR_REPOSITORY: company-wiki
   APP_RUNNER_SERVICE_PROD: company-wiki
   APP_RUNNER_SERVICE_STAGING: company-wiki-staging
-  # GitLab registry variables
   DOCKER_TLS_CERTDIR: ""
+  CPU_STAGING: "1 vCPU"
+  MEMORY_STAGING: "2 GB"
+  CPU_PROD: "2 vCPU" 
+  MEMORY_PROD: "4 GB"
 
 # Cache node_modules between jobs
 cache:
@@ -19,7 +22,7 @@ cache:
   paths:
     - node_modules/
 
-# Jobs to lint and test the code
+# Test stage jobs
 lint:
   stage: test
   image: node:18-alpine
@@ -61,14 +64,13 @@ e2e_tests:
     - main
     - develop
 
-# Build the application
+# Build stage jobs
 build:
   stage: build
   image: node:18-alpine
   script:
     - npm ci
     - npm run build
-    # Verify content directories exist
     - mkdir -p content
     - mkdir -p public
     - echo "Build complete, verifying output..."
@@ -85,124 +87,85 @@ build:
       - next.config.js
       - verify-deployment.sh
       - rollback-deployment.sh
+      - deploy-aws.sh
   except:
     - tags
 
-# Build and push Docker image
-build_docker:
+docker_build:
   stage: build
   image: docker:latest
   services:
     - docker:dind
   variables:
-    DOCKER_HOST: tcp://docker:2375
-  before_script:
-    - docker --version
-    - apk add --no-cache bash git
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
   script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - echo "Building Docker image with the improved Dockerfile..."
-    - docker build --build-arg PORT=3000 --build-arg NODE_ENV=production -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA -t $CI_REGISTRY_IMAGE:latest .
-    - echo "Pushing image to GitLab registry..."
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE:latest
-    - echo "Docker image successfully built and pushed to GitLab registry: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
   only:
     - main
     - develop
 
-# Deploy to AWS App Runner - Staging
+# Deploy stage jobs
 deploy_staging:
   stage: deploy
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
+  image: amazon/aws-cli:latest
   needs:
     - build
-    - build_docker
-  variables:
-    APP_NAME: $APP_RUNNER_SERVICE_STAGING
-    CPU: "1 vCPU"
-    MEMORY: "2 GB"
-  before_script:
-    - yum install -y jq git
-    - aws --version
+    - docker_build
   script:
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
-    - git clone $CI_REPOSITORY_URL ./repo
-    - cd ./repo
-    - git checkout $CI_COMMIT_SHA
+    - yum install -y jq git
     - chmod +x ./deploy-aws.sh
-    - APP_NAME=$APP_RUNNER_SERVICE_STAGING AWS_REGION=$AWS_DEFAULT_REGION CPU="$CPU" MEMORY="$MEMORY" BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
+    - APP_NAME=$APP_RUNNER_SERVICE_STAGING AWS_REGION=$AWS_DEFAULT_REGION CPU=$CPU_STAGING MEMORY=$MEMORY_STAGING BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
     - SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_RUNNER_SERVICE_STAGING'].ServiceArn" --output text)
     - SERVICE_URL=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query "Service.ServiceUrl" --output text)
-    - echo "Service URL: https://$SERVICE_URL"
     - echo "SERVICE_URL=$SERVICE_URL" >> deploy.env
   artifacts:
-    paths:
-      - deploy.env
     reports:
       dotenv: deploy.env
-  only:
-    - develop
   environment:
     name: staging
     url: https://$SERVICE_URL
     on_stop: stop_staging
-
-# Verify staging deployment
-verify_staging:
-  stage: verify
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
-  needs:
-    - deploy_staging
-  before_script:
-    - yum install -y curl jq git
-    - aws --version
-  script:
-    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-    - aws configure set region $AWS_DEFAULT_REGION
-    - git clone $CI_REPOSITORY_URL ./repo
-    - cd ./repo
-    - git checkout $CI_COMMIT_SHA
-    - chmod +x ./verify-deployment.sh
-    - SERVICE_URL=$SERVICE_URL ./verify-deployment.sh
   only:
     - develop
 
-# Deploy to AWS App Runner - Production
-deploy_production:
-  stage: deploy
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
+verify_staging:
+  stage: verify
+  image: amazon/aws-cli:latest
   needs:
-    - build
-    - build_docker
-  variables:
-    APP_NAME: $APP_RUNNER_SERVICE_PROD
-    CPU: "2 vCPU"
-    MEMORY: "4 GB"
-  before_script:
-    - yum install -y jq git
-    - aws --version
+    - deploy_staging
   script:
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
-    - git clone $CI_REPOSITORY_URL ./repo
-    - cd ./repo
-    - git checkout $CI_COMMIT_SHA
+    - yum install -y curl jq
+    - chmod +x ./verify-deployment.sh
+    - ./verify-deployment.sh
+  only:
+    - develop
+
+deploy_production:
+  stage: deploy
+  image: amazon/aws-cli:latest
+  needs:
+    - build
+    - docker_build
+  script:
+    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+    - aws configure set region $AWS_DEFAULT_REGION
+    - yum install -y jq git
     - chmod +x ./deploy-aws.sh
-    - APP_NAME=$APP_RUNNER_SERVICE_PROD AWS_REGION=$AWS_DEFAULT_REGION CPU="$CPU" MEMORY="$MEMORY" BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
+    - APP_NAME=$APP_RUNNER_SERVICE_PROD AWS_REGION=$AWS_DEFAULT_REGION CPU=$CPU_PROD MEMORY=$MEMORY_PROD BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
     - SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_RUNNER_SERVICE_PROD'].ServiceArn" --output text)
     - SERVICE_URL=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query "Service.ServiceUrl" --output text)
-    - echo "Service URL: https://$SERVICE_URL"
     - echo "SERVICE_URL=$SERVICE_URL" >> deploy.env
     - git config --global user.email "gitlab-ci@example.com"
     - git config --global user.name "GitLab CI"
@@ -210,75 +173,54 @@ deploy_production:
     - git tag "deploy-prod-$TIMESTAMP"
     - git push https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git "deploy-prod-$TIMESTAMP"
   artifacts:
-    paths:
-      - deploy.env
     reports:
       dotenv: deploy.env
-  only:
-    - main
-  when: manual
   environment:
     name: production
     url: https://$SERVICE_URL
     on_stop: rollback_production
+  only:
+    - main
+  when: manual
 
-# Verify production deployment
 verify_production:
   stage: verify
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
+  image: amazon/aws-cli:latest
   needs:
     - deploy_production
-  before_script:
-    - yum install -y curl jq git
-    - aws --version
   script:
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
-    - git clone $CI_REPOSITORY_URL ./repo
-    - cd ./repo
-    - git checkout $CI_COMMIT_SHA
+    - yum install -y curl jq
     - chmod +x ./verify-deployment.sh
-    - SERVICE_URL=$SERVICE_URL ./verify-deployment.sh
+    - ./verify-deployment.sh
   only:
     - main
 
-# Setup monitoring for production
+# Monitor stage jobs
 setup_monitoring:
   stage: monitor
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
+  image: amazon/aws-cli:latest
   needs:
     - verify_production
-  before_script:
-    - yum install -y jq git
-    - aws --version
   script:
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
-    - git clone $CI_REPOSITORY_URL ./repo
-    - cd ./repo
-    - git checkout $CI_COMMIT_SHA
-    - REPLACED_ALARMS=$(cat aws/cloudwatch-alarms.yml | sed "s/NotificationEmail: admin@example.com/NotificationEmail: $NOTIFICATION_EMAIL/g" | sed "s/ClusterName: company-wiki-cluster/ClusterName: $ECS_CLUSTER/g" | sed "s/ServiceName: company-wiki-service/ServiceName: $ECS_SERVICE/g") 
-    - echo "$REPLACED_ALARMS" > cloudwatch-alarms.yml
-    - aws cloudformation deploy --template-file cloudwatch-alarms.yml --stack-name company-wiki-alarms --parameter-overrides NotificationEmail=$NOTIFICATION_EMAIL
-    - DASHBOARD_JSON=$(cat aws/cloudwatch-dashboard.json | sed "s/\${ServiceName}/$APP_RUNNER_SERVICE_PROD/g")
-    - echo "$DASHBOARD_JSON" > dashboard.json
+    - yum install -y jq
+    - cat aws/cloudwatch-alarms.yml | sed "s/NotificationEmail: admin@example.com/NotificationEmail: monitoring@example.com/g" > alarms.yml
+    - aws cloudformation deploy --template-file alarms.yml --stack-name company-wiki-alarms --capabilities CAPABILITY_IAM
+    - cat aws/cloudwatch-dashboard.json | sed "s/\${ServiceName}/company-wiki/g" > dashboard.json
     - aws cloudwatch put-dashboard --dashboard-name company-wiki-dashboard --dashboard-body file://dashboard.json
   only:
     - main
   when: manual
 
-# Stop staging environment
+# Environment management jobs
 stop_staging:
   stage: deploy
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
+  image: amazon/aws-cli:latest
   variables:
     GIT_STRATEGY: none
   script:
@@ -286,35 +228,29 @@ stop_staging:
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
     - SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_RUNNER_SERVICE_STAGING'].ServiceArn" --output text)
-    - if [ ! -z "$SERVICE_ARN" ]; then echo "Pausing App Runner service: $APP_RUNNER_SERVICE_STAGING"; aws apprunner pause-service --service-arn $SERVICE_ARN; echo "Service paused successfully"; else echo "Service not found"; fi
-  when: manual
+    - if [ -n "$SERVICE_ARN" ]; then aws apprunner pause-service --service-arn $SERVICE_ARN; fi
   environment:
     name: staging
     action: stop
+  when: manual
   only:
     - develop
 
-# Rollback production deployment
 rollback_production:
   stage: deploy
-  image: 
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
-  before_script:
-    - yum install -y jq git
-    - aws --version
+  image: amazon/aws-cli:latest
+  needs:
+    - build
   script:
     - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
     - aws configure set region $AWS_DEFAULT_REGION
-    - git clone $CI_REPOSITORY_URL ./repo
-    - cd ./repo
-    - git checkout $CI_COMMIT_SHA
+    - yum install -y jq
     - chmod +x ./rollback-deployment.sh
     - APP_NAME=$APP_RUNNER_SERVICE_PROD AWS_REGION=$AWS_DEFAULT_REGION ./rollback-deployment.sh
-  when: manual
   environment:
     name: production
     action: stop
+  when: manual
   only:
     - main
