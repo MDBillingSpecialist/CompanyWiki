@@ -106,7 +106,7 @@ if aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_N
   echo "Service name already exists. Using new name: $APP_NAME"
 fi
 
-# Create the service
+# Create the service with correct parameter name (AccessRoleArn instead of RoleArn)
 echo "Creating new App Runner service: $APP_NAME"
 RESULT=$(aws apprunner create-service \
   --service-name "$APP_NAME" \
@@ -124,7 +124,7 @@ RESULT=$(aws apprunner create-service \
       },
       \"AutoDeploymentsEnabled\": true,
       \"AuthenticationConfiguration\": {
-          \"RoleArn\": \"$ROLE_ARN\"
+          \"AccessRoleArn\": \"$ROLE_ARN\"
       }
   }" \
   --instance-configuration "{
