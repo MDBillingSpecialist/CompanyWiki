@@ -1,83 +1,95 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'GitHub OIDC Role for CI/CD Deployments'
+Description: 'IAM Role for GitHub Actions to deploy to AWS App Runner'
 
 Parameters:
   GitHubOrg:
     Type: String
-    Description: GitHub organization/username
-    Default: YourGitHubOrg
+    Default: 'your-github-org'
+    Description: GitHub organization name
 
   RepositoryName:
     Type: String
+    Default: 'company-wiki'
     Description: GitHub repository name
-    Default: company-wiki
 
   OIDCProviderArn:
     Type: String
-    Description: ARN for the GitHub OIDC Provider
-    Default: ""
+    Description: ARN of the GitHub OIDC provider
+    Default: ''
+
+Conditions:
+  CreateOIDCProvider: !Equals [!Ref OIDCProviderArn, '']
 
 Resources:
-  GitHubOIDCRole:
+  # Create the OIDC Provider for GitHub if it doesn't exist
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  # IAM Role for GitHub Actions
+  GitHubActionsRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: GitHubActionsOIDCRole-CompanyWiki
-      Description: Role for GitHub Actions to deploy the Company Wiki application
-      MaxSessionDuration: 3600
+      RoleName: !Sub ${RepositoryName}-github-actions-role
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
-            Action: sts:AssumeRoleWithWebIdentity
             Principal:
-              Federated: !Ref OIDCProviderArn
+              Federated: !If
+                - CreateOIDCProvider
+                - !GetAtt GitHubOIDCProvider.Arn
+                - !Ref OIDCProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
-                token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/${RepositoryName}:*"
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:*
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonECR-FullAccess
-        - arn:aws:iam::aws:policy/AmazonECS-FullAccess
       Policies:
-        - PolicyName: DeploymentPermissions
+        - PolicyName: AppRunnerDeploymentPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
+              # App Runner permissions
               - Effect: Allow
                 Action:
-                  - cloudformation:DescribeStacks
-                  - cloudformation:DescribeStackEvents
-                  - cloudformation:DescribeStackResource
-                  - cloudformation:DescribeStackResources
-                  - cloudformation:GetTemplate
-                  - cloudformation:ListStackResources
-                  - cloudformation:UpdateStack
-                Resource: !Sub "arn:aws:cloudformation:*:${AWS::AccountId}:stack/company-wiki*/*"
+                  - apprunner:CreateService
+                  - apprunner:UpdateService
+                  - apprunner:DeleteService
+                  - apprunner:StartDeployment
+                  - apprunner:ListServices
+                  - apprunner:DescribeService
+                  - apprunner:TagResource
+                Resource: '*'
+              # IAM permissions needed for App Runner
               - Effect: Allow
                 Action:
-                  - ecs:DescribeServices
-                  - ecs:DescribeTasks
-                  - ecs:ListTasks
-                  - ecs:UpdateService
-                Resource: "*"
+                  - iam:PassRole
+                Resource: '*'
                 Condition:
-                  StringLike:
-                    "ecs:cluster": "*company-wiki*"
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                  - logs:DescribeLogStreams
-                Resource: !Sub "arn:aws:logs:*:${AWS::AccountId}:log-group:/ecs/company-wiki*"
-              - Effect: Allow
-                Action:
-                  - elasticloadbalancing:DescribeLoadBalancers
-                  - elasticloadbalancing:DescribeTargetGroups
-                  - elasticloadbalancing:DescribeTargetHealth
-                Resource: "*"
+                  StringEquals:
+                    'iam:PassedToService': apprunner.amazonaws.com
 
 Outputs:
   RoleARN:
-    Description: ARN of the created IAM Role
-    Value: !GetAtt GitHubOIDCRole.Arn
+    Description: ARN of the IAM role for GitHub Actions
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: !Sub ${RepositoryName}-github-actions-role-arn
+  
+  OIDCProviderArn:
+    Description: ARN of the GitHub OIDC provider
+    Value: !If
+      - CreateOIDCProvider
+      - !GetAtt GitHubOIDCProvider.Arn
+      - !Ref OIDCProviderArn
+    Export:
+      Name: GitHubOIDCProviderArn

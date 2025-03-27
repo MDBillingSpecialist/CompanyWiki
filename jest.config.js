@@ -31,14 +31,27 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!**/node_modules/**',
   ],
-  // Temporarily lower coverage thresholds until more tests are added
+  // Set higher coverage thresholds to ensure better test quality
   coverageThreshold: {
     global: {
-      statements: 3,
-      branches: 3,
-      functions: 2,
-      lines: 2,
+      statements: 30,
+      branches: 25,
+      functions: 30,
+      lines: 30,
     },
+    // Set specific thresholds for critical code
+    'src/lib/**/*.{ts,tsx}': {
+      statements: 60,
+      branches: 50,
+      functions: 60,
+      lines: 60,
+    },
+    'src/components/**/*.{ts,tsx}': {
+      statements: 40,
+      branches: 35,
+      functions: 50,
+      lines: 40,
+    }
   },
 }
 

@@ -1,0 +1,115 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  AWS_REGION: 'us-east-1'  # Change to your region
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    name: Deploy to AWS
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create/Update App Runner Service
+        id: create-service
+        run: |
+          APP_NAME="company-wiki"
+          
+          # Check if service exists
+          SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP_NAME'].ServiceArn" --output text)
+          
+          if [ -z "$SERVICE_ARN" ]; then
+            # Create service if it doesn't exist
+            echo "Creating new App Runner service..."
+            aws apprunner create-service \
+              --service-name "$APP_NAME" \
+              --source-configuration '{
+                "CodeRepository": {
+                  "RepositoryUrl": "https://github.com/${{ github.repository }}",
+                  "SourceCodeVersion": {
+                    "Type": "BRANCH",
+                    "Value": "main"
+                  },
+                  "CodeConfiguration": {
+                    "ConfigurationSource": "REPOSITORY"
+                  }
+                },
+                "AutoDeploymentsEnabled": true
+              }' \
+              --instance-configuration '{
+                "Cpu": "1 vCPU",
+                "Memory": "2 GB"
+              }' \
+              --health-check-configuration '{
+                "Protocol": "HTTP",
+                "Path": "/",
+                "Interval": 10,
+                "Timeout": 5,
+                "HealthyThreshold": 3,
+                "UnhealthyThreshold": 5
+              }' \
+              --region ${{ env.AWS_REGION }}
+          else
+            # Start deployment for existing service
+            echo "Triggering deployment for existing App Runner service..."
+            aws apprunner start-deployment \
+              --service-arn "$SERVICE_ARN" \
+              --region ${{ env.AWS_REGION }}
+          fi
+          
+          # Wait for service to be updated
+          echo "Waiting for service to be created/updated..."
+          sleep 30
+          
+          # Get service URL
+          SERVICE_URL=$(aws apprunner describe-service --service-arn $SERVICE_ARN --query "Service.ServiceUrl" --output text || echo "URL not available yet")
+          echo "Service URL: $SERVICE_URL"
+          echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
+
+      - name: Output Service URL
+        run: |
+          echo "Service deployed successfully!"
+          echo "Service URL: https://${{ steps.create-service.outputs.service_url }}"

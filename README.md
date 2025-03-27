@@ -113,6 +113,8 @@ Each section can have nested subdirectories for better organization.
 
 ## Deployment
 
+### Local Deployment
+
 To build the application for production:
 
 ```bash
@@ -128,6 +130,27 @@ npm start
 # or
 yarn start
 ```
+
+### AWS Deployment
+
+The application is set up for deployment to AWS App Runner. There are multiple options for deployment:
+
+1. **GitHub Actions**: Automatic deployment when pushing to the main branch
+2. **Deployment Script**: Use the `deploy-aws.sh` script for CLI-based deployment
+3. **Manual AWS Console**: Deploy through the AWS App Runner console
+
+For detailed deployment instructions, see [AWS Deployment Steps](docs/AWS_DEPLOYMENT_STEPS.md).
+
+### Docker Deployment
+
+The application can also be deployed using Docker:
+
+```bash
+docker build -t company-wiki .
+docker run -p 3005:3000 company-wiki
+```
+
+For more deployment options, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## License
 
