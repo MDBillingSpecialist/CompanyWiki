@@ -8,24 +8,28 @@ set -e
 echo "Automated GitLab Registry Push - Starting"
 echo "----------------------------------------"
 
-# Get GitLab credentials
-GITLAB_USER=$(git config --get user.email || echo "your_gitlab_username")
-GITLAB_TOKEN=${GITLAB_TOKEN:-$CI_JOB_TOKEN}  # Use CI_JOB_TOKEN if available in GitLab CI, otherwise use GITLAB_TOKEN env var
-
-if [ -z "$GITLAB_TOKEN" ]; then
-  # Check if token is stored in Docker config
-  if ! docker info | grep -q "Username: ${GITLAB_USER}"; then
-    echo "Error: GITLAB_TOKEN environment variable not set and not logged in to registry"
+# Handle GitLab authentication based on environment
+if [ -n "$CI_JOB_TOKEN" ]; then
+  # We're in GitLab CI environment
+  echo "Running in GitLab CI environment, using CI_JOB_TOKEN for authentication..."
+  echo "$CI_JOB_TOKEN" | docker login registry.gitlab.com -u gitlab-ci-token --password-stdin
+elif [ -n "$GITLAB_TOKEN" ]; then
+  # We have a personal access token
+  GITLAB_USER=$(git config --get user.email || echo "your_gitlab_username")
+  echo "Logging in to GitLab Registry using GITLAB_TOKEN..."
+  echo "$GITLAB_TOKEN" | docker login registry.gitlab.com -u ${GITLAB_USER} --password-stdin
+else
+  # Check if already logged in
+  if docker info 2>/dev/null | grep -q "Username:"; then
+    echo "Using existing Docker registry credentials"
+  else
+    echo "Error: No authentication method available"
     echo "Either:"
     echo "  1. Set the GITLAB_TOKEN environment variable: export GITLAB_TOKEN=your_personal_access_token"
-    echo "  2. Log in manually first: docker login registry.gitlab.com -u ${GITLAB_USER}"
+    echo "  2. Log in manually first: docker login registry.gitlab.com -u your_gitlab_username"
+    echo "  3. Run this script within GitLab CI pipeline"
     exit 1
-  else
-    echo "Using existing Docker registry credentials"
   fi
-else
-  echo "Logging in to GitLab Registry as ${GITLAB_USER}..."
-  echo "$GITLAB_TOKEN" | docker login registry.gitlab.com -u ${GITLAB_USER} --password-stdin
 fi
 
 # Define image names
