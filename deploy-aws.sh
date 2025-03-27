@@ -42,11 +42,11 @@ AWS_REGION=${AWS_REGION:-"us-east-1"}
 CPU=${CPU:-"1 vCPU"}
 MEMORY=${MEMORY:-"2 GB"}
 BRANCH=${BRANCH:-"main"}
-GITHUB_REPO=$(git config --get remote.origin.url 2>/dev/null | 
-                sed 's/git@github.com://' | 
-                sed 's/https:\/\/github.com\///' | 
+GITLAB_REPO=$(git config --get remote.origin.url 2>/dev/null | 
+                sed 's/git@gitlab.com://' | 
+                sed 's/https:\/\/gitlab.com\///' | 
                 sed 's/\.git$//' || 
-                echo "DEFAULT_GITHUB_ORG/company-wiki")
+                echo "${CI_PROJECT_PATH:-intelligent-systems-and-development/company-wiki}")
 
 # Check script is run from project root
 if [ ! -f "package.json" ] || [ ! -f "next.config.js" ]; then
@@ -60,7 +60,7 @@ echo "       COMPANY WIKI DEPLOYMENT TO AWS APP RUNNER"
 echo "======================================================"
 log "Application: $APP_NAME"
 log "AWS Region: $AWS_REGION"
-log "GitHub Repo: $GITHUB_REPO"
+log "GitLab Repo: $GITLAB_REPO"
 log "Branch: $BRANCH"
 log "Resources: $CPU / $MEMORY"
 echo "------------------------------------------------------"
@@ -154,7 +154,7 @@ if [ -z "$SERVICE_ARN" ]; then
     --service-name "$APP_NAME" \
     --source-configuration "{
         \"CodeRepository\": {
-            \"RepositoryUrl\": \"https://github.com/$GITHUB_REPO\",
+            \"RepositoryUrl\": \"https://gitlab.com/$GITLAB_REPO\",
             \"SourceCodeVersion\": {
                 \"Type\": \"BRANCH\",
                 \"Value\": \"$BRANCH\"
@@ -195,7 +195,7 @@ else
     --service-arn "$SERVICE_ARN" \
     --source-configuration "{
         \"CodeRepository\": {
-            \"RepositoryUrl\": \"https://github.com/$GITHUB_REPO\",
+            \"RepositoryUrl\": \"https://gitlab.com/$GITLAB_REPO\",
             \"SourceCodeVersion\": {
                 \"Type\": \"BRANCH\",
                 \"Value\": \"$BRANCH\"
