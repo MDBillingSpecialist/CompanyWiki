@@ -32,23 +32,24 @@ unit_tests:
   image: node:18-alpine
   script:
     - npm ci
-    - npm test
+    - npm run test:ci
   artifacts:
     paths:
       - coverage/
     reports:
-      junit: junit.xml
+      junit: test-results/junit.xml
   except:
     - tags
 
 e2e_tests:
   stage: test
-  image: mcr.microsoft.com/playwright:v1.40.0-focal
+  image: mcr.microsoft.com/playwright:v1.51.0-jammy
   script:
     - npm ci
+    - npx playwright install --with-deps
     - npm run build
     - npm run start & npx wait-on http://localhost:3000
-    - npx playwright test
+    - npm run test:e2e
   artifacts:
     when: always
     paths:

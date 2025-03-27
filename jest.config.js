@@ -31,6 +31,14 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!**/node_modules/**',
   ],
+  // Generate JUnit XML report for CI
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: './test-results',
+      outputName: 'junit.xml',
+    }]
+  ],
   // Set higher coverage thresholds to ensure better test quality
   coverageThreshold: {
     global: {

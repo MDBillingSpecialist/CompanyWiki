@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "npx playwright test",
-    "test:ci": "jest --ci --coverage",
+    "test:ci": "JEST_JUNIT_OUTPUT_DIR=./test-results jest --ci --coverage --reporters=default --reporters=jest-junit",
     "test:specific": "jest --testPathPattern",
     "test:generate": "node scripts/create-test.js",
     "test:update-snapshot": "jest --updateSnapshot"
@@ -49,8 +49,10 @@
     "eslint-config-next": "14.0.4",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.6",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "wait-on": "^8.0.3"
   }
 }
