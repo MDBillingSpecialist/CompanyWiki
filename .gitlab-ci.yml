@@ -126,6 +126,7 @@ deploy_staging:
     - chmod +x ./deploy-aws.sh
     - APP_NAME=$APP_RUNNER_SERVICE_STAGING AWS_REGION=$AWS_DEFAULT_REGION CPU=$CPU_STAGING MEMORY=$MEMORY_STAGING BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
     - cat /builds/intelligent-systems-and-development/company-wiki/deploy.env
+    - cp /builds/intelligent-systems-and-development/company-wiki/deploy.env ./deploy.env
   artifacts:
     paths:
       - deploy.env
@@ -169,6 +170,7 @@ deploy_production:
     - chmod +x ./deploy-aws.sh
     - APP_NAME=$APP_RUNNER_SERVICE_PROD AWS_REGION=$AWS_DEFAULT_REGION CPU=$CPU_PROD MEMORY=$MEMORY_PROD BRANCH=$CI_COMMIT_REF_NAME ./deploy-aws.sh
     - cat /builds/intelligent-systems-and-development/company-wiki/deploy.env
+    - cp /builds/intelligent-systems-and-development/company-wiki/deploy.env ./deploy.env
     - git config --global user.email "gitlab-ci@example.com"
     - git config --global user.name "GitLab CI"
     - TIMESTAMP=$(date +%Y%m%d%H%M%S)

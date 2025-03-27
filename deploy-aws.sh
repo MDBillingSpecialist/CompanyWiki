@@ -125,5 +125,6 @@ echo ""
 echo "Check health at: https://$SERVICE_URL/health"
 echo "====================================="
 
-# Export the service URL for GitLab CI
+# Export the service URL for GitLab CI - create in both locations to be safe
 echo "SERVICE_URL=$SERVICE_URL" > /builds/intelligent-systems-and-development/company-wiki/deploy.env
+echo "SERVICE_URL=$SERVICE_URL" > ./deploy.env
