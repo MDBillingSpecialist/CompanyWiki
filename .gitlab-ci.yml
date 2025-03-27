@@ -86,14 +86,19 @@ build_docker:
     - apk add --no-cache bash git
     - chmod +x ./push-to-gitlab.sh
   script:
+    # Login directly to GitLab registry using CI variables
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    
     # Build the Docker image with port configuration
     - docker build --build-arg PORT=3000 -t company-wiki-company-wiki:latest .
     
-    # Use the automated script to push to GitLab registry
-    # (the script now handles authentication automatically in CI environment)
-    - ./push-to-gitlab.sh
+    # Tag and push directly (without using the script)
+    - docker tag company-wiki-company-wiki:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker tag company-wiki-company-wiki:latest $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
     
-    - echo "Docker image built and pushed to GitLab registry"
+    - 'echo "Docker image successfully built and pushed to GitLab registry: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"'
   only:
     - main
     - develop

@@ -8,11 +8,17 @@ set -e
 echo "Automated GitLab Registry Push - Starting"
 echo "----------------------------------------"
 
+# Extra debugging for CI environment
+echo "CI Environment Variables:"
+echo "CI_JOB_TOKEN length: ${#CI_JOB_TOKEN} characters"
+echo "CI_REGISTRY: ${CI_REGISTRY}"
+echo "CI_REGISTRY_IMAGE: ${CI_REGISTRY_IMAGE}"
+
 # Handle GitLab authentication based on environment
-if [ -n "$CI_JOB_TOKEN" ]; then
+if [ -n "$CI_JOB_TOKEN" ] && [ -n "$CI_REGISTRY" ]; then
   # We're in GitLab CI environment
   echo "Running in GitLab CI environment, using CI_JOB_TOKEN for authentication..."
-  echo "$CI_JOB_TOKEN" | docker login registry.gitlab.com -u gitlab-ci-token --password-stdin
+  echo "$CI_JOB_TOKEN" | docker login "$CI_REGISTRY" -u gitlab-ci-token --password-stdin
 elif [ -n "$GITLAB_TOKEN" ]; then
   # We have a personal access token
   GITLAB_USER=$(git config --get user.email || echo "your_gitlab_username")
