@@ -28,6 +28,9 @@ WORKDIR /app
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
 # Create a non-root user and give them ownership
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -44,8 +47,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/content ./content
 
-# Health check - using simple true
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD true
+# Health check - check if app is responding on port 3000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 # Expose the port the app runs on
 EXPOSE 3000

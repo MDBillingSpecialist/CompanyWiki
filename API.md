@@ -51,7 +51,7 @@ All API endpoints follow a consistent response format:
 
 ### Get Content
 
-Retrieves content by path, section, or as a list.
+Retrieves content by path, section, or as a list with advanced filtering, pagination, and sorting capabilities.
 
 **Endpoint:** `GET /api/content`
 
@@ -60,7 +60,27 @@ Retrieves content by path, section, or as a list.
 - `section` (optional) - Section name to list content from
 - `list` (optional) - Set to "true" to list all content
 - `q` (optional) - Search query
-- `tag` (optional) - Filter by tag
+- `tag` (optional) - Filter by a single tag
+- `tags` (optional, repeatable) - Filter by multiple tags (can be used multiple times)
+- `page` (optional) - Page number for pagination (default: 1)
+- `limit` (optional) - Number of items per page (default: 20, max: 100)
+- `sortBy` (optional) - Field to sort by (e.g., 'path', 'frontmatter.title', 'lastModified')
+- `sortOrder` (optional) - Sort order ('asc' or 'desc', default: 'asc')
+- `after` (optional) - Cursor for cursor-based pagination (use instead of page)
+
+**Pagination:**
+
+The API supports both page-based and cursor-based pagination:
+
+- **Page-based** - Use `page` and `limit` parameters
+- **Cursor-based** - Use `after` and `limit` parameters (useful for infinite scrolling UIs)
+
+The response will include:
+- `total` - Total number of items matching the query
+- `page` - Current page number (for page-based pagination)
+- `limit` - Number of items per page
+- `hasMore` - Whether there are more items to fetch
+- `nextCursor` - Cursor to use for the next page (for cursor-based pagination)
 
 **Examples:**
 
@@ -69,36 +89,74 @@ Retrieves content by path, section, or as a list.
 GET /api/content?path=hipaa/core/technical-security
 ```
 
-2. List all content in a section:
+2. List content in a section with pagination:
 ```
-GET /api/content?section=hipaa
-```
-
-3. List all content:
-```
-GET /api/content?list=true
+GET /api/content?section=hipaa&page=1&limit=10
 ```
 
-4. Search content:
+3. List all content sorted by last modified date:
 ```
-GET /api/content?q=security&section=hipaa
+GET /api/content?list=true&sortBy=lastModified&sortOrder=desc
+```
+
+4. Search content with pagination:
+```
+GET /api/content?q=security&section=hipaa&page=1&limit=20
+```
+
+5. Filter content by multiple tags:
+```
+GET /api/content?section=hipaa&tags=security&tags=compliance
+```
+
+6. Cursor-based pagination:
+```
+GET /api/content?list=true&limit=10&after=encoded_cursor_value
 ```
 
 ## Files API
 
 ### List Files
 
-Lists files and directories in the content directory.
+Lists files and directories in the content directory with sorting and filtering capabilities.
 
 **Endpoint:** `GET /api/files`
 
 **Query Parameters:**
 - `path` (optional) - Path to directory (defaults to root content directory)
 - `recursive` (optional) - Set to "true" to list recursively
+- `sortBy` (optional) - Field to sort by (default: 'name')
+  - Valid values: 'name', 'path', 'type', 'size', 'lastModified'
+- `sortOrder` (optional) - Sort order (default: 'asc')
+  - Valid values: 'asc', 'desc'
+- `fileType` (optional) - Filter by file type
+  - Valid values: 'file', 'directory'
+- `extension` (optional) - Filter by file extension (e.g., 'md', '.md')
 
-**Example:**
+**Response:**
+
+The response includes:
+- `path` - The directory path
+- `items` - Array of files and directories
+- `filter` - Applied filters
+- `sort` - Applied sorting
+- `total` - Total number of items after filtering
+
+**Examples:**
+
+1. List all files in a directory:
 ```
 GET /api/files?path=hipaa&recursive=true
+```
+
+2. List only markdown files sorted by last modified date:
+```
+GET /api/files?path=hipaa&extension=md&sortBy=lastModified&sortOrder=desc
+```
+
+3. List only directories:
+```
+GET /api/files?path=content&fileType=directory
 ```
 
 ### Get File
@@ -193,7 +251,7 @@ Form Data:
 
 ## Search API
 
-Searches content by query and/or tag.
+Searches content by query and/or tag with pagination.
 
 **Endpoint:** `GET /api/search`
 
@@ -201,10 +259,32 @@ Searches content by query and/or tag.
 - `q` (optional) - Search query
 - `tag` (optional) - Filter by tag
 - `section` (optional) - Limit search to a specific section
+- `page` (optional) - Page number for pagination (default: 1)
+- `limit` (optional) - Number of items per page (default: 20, max: 100)
 
-**Example:**
+**Pagination:**
+
+The response includes pagination metadata:
+- `total` - Total number of search results
+- `page` - Current page number
+- `limit` - Number of items per page
+- `hasMore` - Whether there are more results to fetch
+
+**Examples:**
+
+1. Basic search:
 ```
 GET /api/search?q=security&section=hipaa
+```
+
+2. Search with pagination:
+```
+GET /api/search?q=compliance&page=2&limit=10
+```
+
+3. Tag-based search:
+```
+GET /api/search?tag=security&section=hipaa&page=1&limit=20
 ```
 
 ## Security Considerations

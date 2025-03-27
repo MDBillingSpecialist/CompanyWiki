@@ -59,11 +59,38 @@ export interface ContentResponse {
   lastModified?: string;
 }
 
+// Content query parameters
+export interface ContentQueryParams {
+  path?: string;
+  section?: string;
+  list?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  tags?: string[];
+  after?: string;  // Cursor for pagination
+  q?: string;      // Search query
+  tag?: string;    // Single tag filter (for backward compatibility)
+}
+
+// Paginated response
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page?: number;
+  limit?: number;
+  hasMore?: boolean;
+  nextCursor?: string;
+}
+
 // Search
 export interface SearchParams {
   q?: string;
   tag?: string;
   section?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface SearchResult {

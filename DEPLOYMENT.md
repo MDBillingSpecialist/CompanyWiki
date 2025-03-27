@@ -57,9 +57,13 @@ The project includes an automated script to push Docker images to GitLab Contain
 
 4. Once the image is pushed to GitLab Registry, the CI/CD pipeline will automatically deploy to AWS when code changes are pushed to the repository.
 
-## AWS ECS Deployment
+## AWS Deployment Options
 
-The project includes a CI/CD pipeline for deploying to AWS ECS:
+The project can be deployed to AWS using either AWS App Runner or ECS.
+
+### AWS App Runner Deployment (Recommended)
+
+AWS App Runner provides a simplified deployment experience with automatic scaling and health checks:
 
 1. Ensure the following environment variables are set in GitLab CI/CD:
    - `AWS_ACCESS_KEY_ID`
@@ -67,10 +71,31 @@ The project includes a CI/CD pipeline for deploying to AWS ECS:
    - `AWS_ACCOUNT_ID`
    - `AWS_DEFAULT_REGION`
 
+2. Use the provided `apprunner.yaml` configuration file for direct deployment:
+   ```
+   aws apprunner create-service --source-configuration sourceCodeUrl=YOUR_REPO_URL,configurationSource=REPOSITORY --auto-deployments-enabled
+   ```
+
+3. For ECR-based deployment:
+   - Push the image to AWS ECR
+   - Create an App Runner service that uses the ECR image
+   - Use the following settings:
+     - Port: 3000
+     - Health check path: /
+     - Health check protocol: HTTP
+
+### AWS ECS Deployment (Alternative)
+
+For more control over the infrastructure, ECS deployment is available:
+
+1. Ensure the same environment variables are set as above.
+
 2. The pipeline will:
    - Pull the image from GitLab Registry
    - Push it to AWS ECR
    - Update the ECS service to use the new image
+   
+3. Use the CloudFormation template in `aws/cloudformation.yml` for full infrastructure setup
 
 ## Port Configuration
 
