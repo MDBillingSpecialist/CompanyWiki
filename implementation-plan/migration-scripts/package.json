@@ -1,0 +1,25 @@
+{
+  "name": "wiki-migration-scripts",
+  "version": "1.0.0",
+  "description": "Migration scripts for hybrid wiki architecture",
+  "main": "migrate-content.js",
+  "scripts": {
+    "migrate-content": "node migrate-content.js",
+    "migrate-hipaa": "node migrate-hipaa-data.js",
+    "sample-data": "node sample-data.js",
+    "direct-content": "node direct-content-migration.js",
+    "populate-hipaa": "node populate-hipaa-data.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "commander": "^11.0.0",
+    "dotenv": "^16.3.1",
+    "gray-matter": "^4.0.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.33.0",
+    "uuid": "^9.0.1",
+    "playwright": "^1.40.0"
+  }
+}

@@ -1,0 +1,18 @@
+[32m2025-03-27 06:31:11:3111 info: API layer running on port 3100[39m
+[32m2025-03-27 06:31:31:3131 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:31:31 +0000] "GET /health HTTP/1.1" 200 76 "-" "curl/8.7.1"[39m
+[31m2025-03-27 06:38:53:3853 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:38:53:3853 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:38:53 +0000] "GET /api/hipaa/dashboard HTTP/1.1" 401 56 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0"[39m
+[31m2025-03-27 06:38:53:3853 error: Error: Endpoint not found[39m
+[32m2025-03-27 06:38:53:3853 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:38:53 +0000] "GET /favicon.ico HTTP/1.1" 404 42 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0"[39m
+[31m2025-03-27 06:38:56:3856 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:38:56:3856 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:38:56 +0000] "GET /api/hipaa/dashboard HTTP/1.1" 401 56 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0"[39m
+[31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:50:22:5022 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:50:22 +0000] "POST /api/hipaa/status HTTP/1.1" 401 56 "-" "axios/1.8.4"[39m
+[31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:50:22:5022 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:50:22 +0000] "POST /api/hipaa/status HTTP/1.1" 401 56 "-" "axios/1.8.4"[39m
+[31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:50:22:5022 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:50:22 +0000] "POST /api/hipaa/status HTTP/1.1" 401 56 "-" "axios/1.8.4"[39m
+[31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:50:22:5022 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:50:22 +0000] "POST /api/hipaa/status HTTP/1.1" 401 56 "-" "axios/1.8.4"[39m
+[31m2025-03-27 06:50:22:5022 error: Error: No authentication token provided[39m
+[32m2025-03-27 06:50:22:5022 info: ::ffff:192.168.65.1 - - [27/Mar/2025:06:50:22 +0000] "POST /api/hipaa/status HTTP/1.1" 401 56 "-" "axios/1.8.4"[39m
