@@ -1,0 +1,10 @@
+AWS APP RUNNER DEPLOYMENT DETAILS (ECR)
+================================
+Deployment Date: Thu Mar 27 18:45:01 CDT 2025
+Service Name: company-wiki-ecr
+Service ARN: arn:aws:apprunner:us-east-1:038462783455:service/company-wiki-ecr/d4fa5878cc58464fac913a192949e4dd
+Service URL: https://i29mqvixpx.us-east-1.awsapprunner.com
+ECR Image: 038462783455.dkr.ecr.us-east-1.amazonaws.com/company-wiki:latest
+Region: us-east-1
+Resources: 1 vCPU / 2 GB
+================================

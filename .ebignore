@@ -1,0 +1,7 @@
+node_modules/
+.git/
+.github/
+.gitlab/
+__tests__/
+e2e/
+.next/cache/

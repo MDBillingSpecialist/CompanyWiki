@@ -1,0 +1,10 @@
+AWS APP RUNNER QUICK DEPLOYMENT
+================================
+Deployment Date: Thu Mar 27 18:55:13 CDT 2025
+Service Name: company-wiki-quick-20250327185511
+Service ARN: arn:aws:apprunner:us-east-1:038462783455:service/company-wiki-quick-20250327185511/5f2dc2f1397a432c8458cd25b4a937e9
+Service URL: https://i2tpmparht.us-east-1.awsapprunner.com
+ECR Image: 038462783455.dkr.ecr.us-east-1.amazonaws.com/company-wiki:latest
+Region: us-east-1
+Resources: 1 vCPU / 2 GB
+================================
