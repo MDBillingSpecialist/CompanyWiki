@@ -1,0 +1,17 @@
+{
+  "name": "wiki-content-manager-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for wiki content management",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "axios": "^1.6.7",
+    "fs-extra": "^11.2.0",
+    "gray-matter": "^4.0.3",
+    "string-similarity": "^4.0.4"
+  }
+}

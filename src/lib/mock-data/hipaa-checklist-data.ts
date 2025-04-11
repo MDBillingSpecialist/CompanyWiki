@@ -16,7 +16,7 @@ const technicalSecurityItems: ChecklistItem[] = [
     category: 'technical',
     label: 'Implement access controls (unique user identification)',
     description: 'Ensure each user has unique credentials and appropriate access levels.',
-    completed: false,
+    completed: true,
     priority: 'high'
   },
   {
@@ -24,7 +24,7 @@ const technicalSecurityItems: ChecklistItem[] = [
     category: 'technical',
     label: 'Implement audit controls and activity logs',
     description: 'Track all access to PHI with appropriate detail for investigations.',
-    completed: false,
+    completed: true,
     priority: 'high'
   },
   {
@@ -32,7 +32,7 @@ const technicalSecurityItems: ChecklistItem[] = [
     category: 'technical',
     label: 'Enable data integrity controls to prevent improper alteration',
     description: 'Implement mechanisms to ensure that PHI is not improperly altered or destroyed.',
-    completed: false,
+    completed: true,
     priority: 'medium'
   },
   {

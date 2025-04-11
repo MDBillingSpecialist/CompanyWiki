@@ -28,31 +28,32 @@ export const SearchBar = () => {
     setIsSearching(true);
     setShowResults(true);
     
-    // Simulated search results - in a real implementation, this would call an API
-    setTimeout(() => {
-      // Mock results based on the query
-      const mockResults: SearchResult[] = [
-        {
-          title: "HIPAA Documentation",
-          description: "Comprehensive guide to HIPAA compliance for healthcare software development",
-          path: "/wiki/hipaa",
-          matches: ["Comprehensive HIPAA resources"]
-        },
-        {
-          title: "Technical Security Standards",
-          description: "HIPAA technical security requirements for healthcare software",
-          path: "/wiki/hipaa/core/technical-security",
-          matches: ["All PHI stored in databases must be encrypted"]
-        },
-      ].filter(result => 
-        result.title.toLowerCase().includes(query.toLowerCase()) || 
-        result.description.toLowerCase().includes(query.toLowerCase()) ||
-        result.matches.some(match => match.toLowerCase().includes(query.toLowerCase()))
-      );
+    try {
+      // Call the search API
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       
-      setResults(mockResults);
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform API results to match our SearchResult interface
+      const apiResults: SearchResult[] = data.data.items.map((item: any) => ({
+        title: item.title,
+        description: item.description || '',
+        path: `/wiki/${item.slug}`,
+        matches: item.matches ? item.matches.map((m: any) => m.text) : []
+      }));
+      
+      setResults(apiResults);
+    } catch (error) {
+      console.error('Search error:', error);
+      // Show error in results area
+      setResults([]);
+    } finally {
       setIsSearching(false);
-    }, 500);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

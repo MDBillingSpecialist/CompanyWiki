@@ -4,24 +4,9 @@ runtime: nodejs18
 
 build:
   commands:
-    pre-build:
-      # Install dependencies and ensure all required directories exist
-      - echo "Ensuring build directories exist..."
-      - mkdir -p content
-      - mkdir -p public
     build:
-      # Clean install and build with detailed logging
-      - echo "Installing dependencies..."
       - npm ci
-      - echo "Building application..."
       - npm run build
-    post-build:
-      # Verify build result
-      - echo "Verifying build artifacts..."
-      - ls -la .next/
-      - echo "Checking content directory..."
-      - ls -la content/
-      - echo "Build complete!"
 
 run:
   runtime-version: 18.0.0
@@ -30,32 +15,16 @@ run:
     port: 3000
     env: PORT
   env:
-    # Required environment variables
     - name: NODE_ENV
       value: production
     - name: NEXT_TELEMETRY_DISABLED
-      value: "1"
-    # Logging configuration
-    - name: LOG_LEVEL
-      value: "info"
-    # Performance settings for AWS environment
-    - name: NODE_OPTIONS
-      value: "--max-old-space-size=2048" # Prevent memory issues
-  # Ensure these directories are copied to the App Runner service
-  copy-without-extension:
-    - source: content
-      destination: /content
-    - source: public
-      destination: /public
-    - source: .next
-      destination: /.next
+      value: 1
 
 health-check:
-  # Use dedicated health endpoint instead of the main page for faster checks
-  path: /health
+  path: /
   protocol: HTTP
-  interval: 15 # Slightly longer interval to reduce load
+  interval: 10
   timeout: 5
-  healthy-threshold: 2 # Lower threshold for faster recovery
-  unhealthy-threshold: 3
-  start-period: 60 # Give the app enough time to start
+  healthy-threshold: 3
+  unhealthy-threshold: 5
+  start-period: 60

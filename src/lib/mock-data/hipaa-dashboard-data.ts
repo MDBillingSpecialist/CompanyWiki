@@ -13,35 +13,35 @@ import { ComplianceStatus, ReviewItem } from '@/components/hipaa/HipaaDashboard'
 export const complianceStatusData: ComplianceStatus[] = [
   {
     category: 'technical',
-    status: 'compliant',
+    status: 'at-risk',
     lastReviewed: '2025-02-15',
     nextReview: '2025-05-15',
-    progress: 100,
+    progress: 38,
     items: {
-      total: 18,
-      completed: 18
+      total: 8,
+      completed: 3
     }
   },
   {
     category: 'administrative',
-    status: 'at-risk',
+    status: 'non-compliant',
     lastReviewed: '2025-02-10',
     nextReview: '2025-03-25',
-    progress: 85,
+    progress: 0,
     items: {
-      total: 20,
-      completed: 17
+      total: 8,
+      completed: 0
     }
   },
   {
     category: 'physical',
-    status: 'compliant',
+    status: 'non-compliant',
     lastReviewed: '2025-02-05',
     nextReview: '2025-05-05',
-    progress: 100,
+    progress: 0,
     items: {
-      total: 10,
-      completed: 10
+      total: 6,
+      completed: 0
     }
   },
   {
@@ -49,21 +49,21 @@ export const complianceStatusData: ComplianceStatus[] = [
     status: 'non-compliant',
     lastReviewed: '2025-01-25',
     nextReview: '2025-03-15',
-    progress: 60,
+    progress: 0,
     items: {
-      total: 15,
-      completed: 9
+      total: 8,
+      completed: 0
     }
   },
   {
     category: 'ccm',
-    status: 'at-risk',
+    status: 'non-compliant',
     lastReviewed: '2025-02-12',
     nextReview: '2025-03-20',
-    progress: 80,
+    progress: 0,
     items: {
-      total: 10,
-      completed: 8
+      total: 6,
+      completed: 0
     }
   }
 ];

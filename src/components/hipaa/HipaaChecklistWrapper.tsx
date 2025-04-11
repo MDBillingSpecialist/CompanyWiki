@@ -8,59 +8,38 @@
  * 
  * #tags: hipaa, checklist, client-component
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { HipaaChecklist, ChecklistCategory, ChecklistItem } from './HipaaChecklist';
+import React, { useCallback } from 'react';
+import { HipaaChecklist, ChecklistCategory } from './HipaaChecklist';
+import { useHipaaCompliance } from '@/lib/hooks/useHipaaComplianceContext';
 
 export interface HipaaChecklistWrapperProps {
   title: string;
   description?: string;
-  initialCategories: ChecklistCategory[];
-  lastUpdated?: string;
-  onSave?: (categories: ChecklistCategory[]) => void;
+  selectedCategory: string;
 }
 
 export function HipaaChecklistWrapper({
   title,
   description,
-  initialCategories,
-  lastUpdated,
-  onSave
+  selectedCategory
 }: HipaaChecklistWrapperProps) {
-  // State to track the checklist categories and items
-  const [categories, setCategories] = useState<ChecklistCategory[]>(initialCategories);
+  // Use the shared HIPAA compliance context
+  const { checklistCategories, lastUpdated, updateChecklistItem } = useHipaaCompliance();
   
-  // Update categories when initialCategories changes
-  useEffect(() => {
-    setCategories(initialCategories);
-  }, [initialCategories]);
-  
-  // Handle toggling a checklist item with useCallback to prevent infinite loops
-  const handleItemToggle = useCallback((itemId: string, completed: boolean) => {
-    setCategories(prevCategories => {
-      const updatedCategories = prevCategories.map(category => {
-        const updatedItems = category.items.map(item => {
-          if (item.id === itemId) {
-            return { ...item, completed: !item.completed };
-          }
-          return item;
-        });
-        
-        return {
-          ...category,
-          items: updatedItems
-        };
+  // Filter categories based on the selected category
+  const filteredCategories = selectedCategory === 'all' 
+    ? checklistCategories 
+    : checklistCategories.filter(category => {
+        if (selectedCategory === 'technical' && category.id === 'technical-security') return true;
+        if (selectedCategory === 'administrative' && category.id === 'administrative') return true;
+        if (selectedCategory === 'physical' && category.id === 'physical') return true;
+        if (selectedCategory === 'llm' && category.id === 'llm') return true;
+        if (selectedCategory === 'ccm' && category.id === 'ccm') return true;
+        return false;
       });
-      
-      if (onSave) {
-        onSave(updatedCategories);
-      }
-      
-      return updatedCategories;
-    });
-  }, [onSave]);
   
   // Handle click events on checklist items
-  const handleClick = (event: React.MouseEvent) => {
+  const handleClick = useCallback((event: React.MouseEvent) => {
     // Find the closest checkbox element
     const target = event.target as HTMLElement;
     const checkbox = target.closest('[role="checkbox"]');
@@ -70,17 +49,17 @@ export function HipaaChecklistWrapper({
       const isCompleted = checkbox.getAttribute('data-is-completed') === 'true';
       
       if (itemId) {
-        handleItemToggle(itemId, isCompleted);
+        updateChecklistItem(itemId, isCompleted);
       }
     }
-  };
+  }, [updateChecklistItem]);
   
   return (
     <div onClick={handleClick}>
       <HipaaChecklist
         title={title}
         description={description}
-        categories={categories}
+        categories={filteredCategories}
         lastUpdated={lastUpdated}
       />
       
@@ -88,7 +67,7 @@ export function HipaaChecklistWrapper({
       <div className="mt-6 flex justify-end">
         <button
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          onClick={() => onSave && onSave(categories)}
+          onClick={() => alert('Progress saved automatically!')}
         >
           Save Progress
         </button>

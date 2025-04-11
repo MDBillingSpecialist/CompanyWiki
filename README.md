@@ -1,183 +1,176 @@
 # Company Wiki
 
-A modern, Next.js-based wiki application for company documentation, HIPAA compliance resources, and standard operating procedures.
+**Version:** 1.0.0  
+**Last Updated:** 2024-03-21  
+**Tags:** documentation, wiki, next.js, typescript  
+
+## Overview
+
+A comprehensive internal documentation platform built with Next.js and TypeScript, featuring HIPAA compliance tracking, MCP tools management, and integrated project documentation.
 
 ## Features
 
-- **Modern Architecture**: Built with Next.js 14, TypeScript, and Tailwind CSS
-- **Content Management**: Markdown/MDX-based content with frontmatter metadata
-- **Full API Support**: RESTful API for content management and search
-- **Navigation**: Intuitive sidebar navigation with collapsible sections and breadcrumbs
-- **Documentation**: Comprehensive HIPAA resources and company SOPs
-- **Responsive Design**: Works well on all devices
-- **Search Functionality**: Full-text search across all content
-- **Testing**: Comprehensive unit, component, and E2E testing
+- 📚 **Documentation Management**
+  - Markdown-based content
+  - Real-time preview
+  - Version control integration
+  - Search functionality
 
-## Getting Started
+- 🔒 **HIPAA Compliance**
+  - Compliance dashboard
+  - Automated checks
+  - Audit logging
+  - Review tracking
 
-### Prerequisites
+- 🛠 **MCP Tools**
+  - Monday.com integration
+  - Tool configuration management
+  - Security controls
+  - Usage analytics
 
-- Node.js 18.17.0 or later
-- npm or yarn
+- 🔐 **Security**
+  - Role-based access control
+  - Audit trails
+  - Secure authentication
+  - PHI protection
 
-### Installation
+## Tech Stack
 
-1. Clone the repository
-```bash
-git clone <repository-url>
-```
+- **Framework:** Next.js 14
+- **Language:** TypeScript
+- **Styling:** TailwindCSS
+- **Content:** Markdown
+- **Testing:** Jest/Vitest
 
-2. Navigate to the project directory
-```bash
-cd company-wiki
-```
+## Prerequisites
 
-3. Install dependencies
-```bash
-npm install
-# or
-yarn install
-```
+- Node.js 18+
+- npm/yarn
+- Git
 
-4. Start the development server
-```bash
-npm run dev
-# or
-yarn dev
-```
+## Installation
 
-5. Open your browser and navigate to `http://localhost:3000`
+1. **Clone the Repository**
+   ```bash
+   git clone https://gitlab.com/company/company-wiki.git
+   cd company-wiki
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
 
 ## Project Structure
 
 ```
-/company-wiki
-├── /content            # Wiki content in Markdown/MDX format
-│   ├── /company-wiki   # Company information
-│   ├── /hipaa          # HIPAA compliance documentation
-│   └── /sop            # Standard operating procedures
-├── /public             # Static assets
-├── /scripts            # Utility scripts
-└── /src
-    ├── /app            # Next.js App Router pages
-    │   ├── /api        # API routes
-    ├── /components     # React components
-    ├── /lib            # Core library code
-    │   ├── /api        # API utilities
-    │   ├── /content    # Content processing
-    │   ├── /files      # File operations
-    │   └── /search     # Search functionality
-    ├── /styles         # Global styles
-    └── /types          # TypeScript definitions
+company-wiki/
+├── content/              # Documentation content
+│   ├── sop/             # Standard Operating Procedures
+│   ├── mcp-tools/       # MCP Tools documentation
+│   └── hipaa/           # HIPAA compliance docs
+├── src/
+│   ├── app/             # Next.js app directory
+│   ├── components/      # React components
+│   ├── lib/             # Utilities and helpers
+│   └── styles/          # Global styles
+├── public/              # Static assets
+└── tools/              # Development tools
 ```
 
-## API Documentation
+## Development
 
-The wiki provides a comprehensive API for content management and search. See [API.md](API.md) for detailed documentation.
+### Available Scripts
 
-### Key API Endpoints
+- `npm run dev` - Start development server
+- `npm run build` - Build production version
+- `npm run start` - Start production server
+- `npm run test` - Run tests
+- `npm run lint` - Run linter
+- `npm run format` - Format code
 
-- **Content**: `/api/content` - Get content by path, section, or list all
-- **Files**: `/api/files` - List, create, update, and delete files
-- **Upload**: `/api/upload` - Upload files
-- **Search**: `/api/search` - Search content by query or tag
+### Content Management
 
-## Adding New Content
+1. **Adding Content**
+   - Create `.md` files in the appropriate content directory
+   - Include required frontmatter
+   - Add necessary assets to `public/`
 
-To add new content to the wiki:
+2. **Updating Documentation**
+   - Edit existing markdown files
+   - Run local server to preview changes
+   - Commit changes following guidelines
 
-1. Create a new Markdown (.md) or MDX (.mdx) file in the appropriate directory under `/content`
-2. Add frontmatter metadata at the top of the file:
-   ```yaml
-   ---
-   title: Your Document Title
-   description: Brief description of the document
-   lastUpdated: YYYY-MM-DD
-   tags: ['tag1', 'tag2']
-   ---
-   ```
-3. Add your content using Markdown syntax
-4. The file will automatically appear in the navigation sidebar and be accessible via URL
+### Component Development
 
-Alternatively, you can use the API to create content programmatically.
+1. **Creating Components**
+   - Use TypeScript for type safety
+   - Follow project structure
+   - Include tests and documentation
 
-## Content Organization
-
-The wiki content is organized into three main sections:
-
-- **Company Wiki**: General company information, team structure, and organizational resources
-- **HIPAA**: HIPAA compliance documentation, technical requirements, and implementation guides
-- **SOPs**: Standard operating procedures for engineering, compliance, and operational tasks
-
-Each section can have nested subdirectories for better organization.
+2. **Styling**
+   - Use TailwindCSS utilities
+   - Follow design system
+   - Ensure responsive design
 
 ## Deployment
 
-### Local Deployment
+1. **Build Process**
+   ```bash
+   npm run build
+   ```
 
-To build the application for production:
+2. **Production Start**
+   ```bash
+   npm run start
+   ```
 
-```bash
-npm run build
-# or
-yarn build
-```
+3. **Environment Variables**
+   Required for production:
+   - `NODE_ENV=production`
+   - `API_BASE_URL`
+   - `MONDAY_API_KEY`
+   - `SESSION_SECRET`
 
-To start the production server:
+## Contributing
 
-```bash
-npm start
-# or
-yarn start
-```
+1. Create a feature branch
+2. Make your changes
+3. Write/update tests
+4. Update documentation
+5. Submit merge request
 
-### AWS Deployment
+## Security
 
-The application is set up for deployment to AWS App Runner with multiple deployment options:
+- Follow HIPAA guidelines
+- Use secure environment variables
+- Implement access controls
+- Regular security audits
 
-#### 1. GitHub-based Deployment
-For deploying directly from a GitHub repository:
-```bash
-./aws/create-new-app-github.sh
-```
-This method:
-- Creates a GitHub connection (requires manual authentication in AWS console)
-- Deploys directly from your GitHub repository
-- Uses the configuration in apprunner.yaml
+## Support
 
-#### 2. ECR-based Deployment
-For deploying using Docker and Amazon ECR:
-```bash
-./aws/setup-ecr-deployment.sh
-```
-This method:
-- Builds and pushes a Docker image to Amazon ECR
-- Creates an App Runner service using the container image
-- Does not require a GitHub connection
-
-#### 3. GitLab CI/CD Pipeline
-For automatic deployments via GitLab CI/CD:
-- Push to the `develop` branch to deploy to staging
-- Push to the `main` branch to trigger production deployment (manual approval required)
-
-#### Deployment Prerequisites
-- AWS CLI installed and configured with appropriate credentials
-- Docker installed (for ECR deployment)
-- Appropriate IAM permissions to create roles and App Runner services
-
-For detailed deployment instructions, see [AWS Deployment Steps](docs/AWS_DEPLOYMENT_STEPS.md).
-
-### Docker Deployment
-
-The application can also be deployed using Docker:
-
-```bash
-docker build -t company-wiki .
-docker run -p 3005:3000 company-wiki
-```
-
-For more deployment options, see [DEPLOYMENT.md](DEPLOYMENT.md).
+- **Technical Issues:** Alex (Lead Developer)
+- **Content Management:** Documentation Team
+- **Security Concerns:** Security Team
 
 ## License
 
-[Specify your license here]
+Proprietary - All rights reserved
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | 2024-03-21 | Initial release |
+| 1.0.1 | 2024-03-22 | Added MCP tools |

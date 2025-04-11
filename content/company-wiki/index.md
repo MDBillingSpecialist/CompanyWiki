@@ -79,6 +79,14 @@ New team members should review the following resources:
 - [IT Setup](/wiki/company-wiki/it-setup) - Instructions for setting up your workstation
 - [Required Training](/wiki/company-wiki/training) - Compliance and role-specific training
 
+### Wiki Management
+
+Resources for managing and organizing wiki content:
+
+- [Content Management System](/wiki/company-wiki/content-management) - Guide to using the wiki content management features
+- [Content Style Guide](/wiki/company-wiki/style-guide) - Standards for formatting and organizing content
+- [Documentation Best Practices](/wiki/company-wiki/documentation-best-practices) - Tips for effective documentation
+
 ### Company Policies
 
 All team members should be familiar with our key policies:

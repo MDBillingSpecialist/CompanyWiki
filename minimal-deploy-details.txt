@@ -1,9 +1,0 @@
-AWS APP RUNNER MINIMAL DEPLOYMENT
-================================
-Deployment Date: Thu Mar 27 19:07:49 CDT 2025
-Service Name: company-wiki-minimal-20250327190734
-Service ARN: arn:aws:apprunner:us-east-1:038462783455:service/company-wiki-minimal-20250327190734/3f33043cec6b49d9888716a8e6de9fa5
-Service URL: https://3y5bqpj4k2.us-east-1.awsapprunner.com
-ECR Image: 038462783455.dkr.ecr.us-east-1.amazonaws.com/company-wiki-minimal:latest
-Region: us-east-1
-================================

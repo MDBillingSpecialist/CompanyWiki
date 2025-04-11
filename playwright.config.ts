@@ -1,11 +1,10 @@
-import { PlaywrightTestConfig, defineConfig } from '@playwright/test';
+import { PlaywrightTestConfig } from '@playwright/test';
 
-const config: PlaywrightTestConfig = defineConfig({
+const config: PlaywrightTestConfig = {
   testDir: './e2e',
   timeout: 30000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? [['html'], ['junit', { outputFile: 'test-results/e2e-junit.xml' }]] : 'html',
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -16,6 +15,6 @@ const config: PlaywrightTestConfig = defineConfig({
       use: { browserName: 'chromium' },
     },
   ],
-});
+};
 
 export default config;

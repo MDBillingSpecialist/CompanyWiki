@@ -31,22 +31,14 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!**/node_modules/**',
   ],
-  // Generate JUnit XML report for CI
-  reporters: [
-    'default',
-    ['jest-junit', {
-      outputDirectory: './test-results',
-      outputName: 'junit.xml',
-    }]
-  ],
-  // Set minimal coverage thresholds to allow pipeline to pass
+  // Temporarily lower coverage thresholds until more tests are added
   coverageThreshold: {
     global: {
-      statements: 0,
-      branches: 0,
-      functions: 0,
-      lines: 0,
-    }
+      statements: 3,
+      branches: 3,
+      functions: 2,
+      lines: 2,
+    },
   },
 }
 

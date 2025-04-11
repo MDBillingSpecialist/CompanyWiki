@@ -1,9 +1,0 @@
-AWS APP RUNNER SUPER MINIMAL DEPLOYMENT
-================================
-Deployment Date: Thu Mar 27 19:12:32 CDT 2025
-Service Name: company-wiki-super-min-20250327191222
-Service ARN: arn:aws:apprunner:us-east-1:038462783455:service/company-wiki-super-min-20250327191222/c307287b696a4f2882d3f7121f992719
-Service URL: https://ktcxr9vb6p.us-east-1.awsapprunner.com
-ECR Image: 038462783455.dkr.ecr.us-east-1.amazonaws.com/company-wiki-super-min:latest
-Region: us-east-1
-================================

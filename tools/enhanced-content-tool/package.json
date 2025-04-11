@@ -1,0 +1,22 @@
+{
+  "name": "enhanced-content-tool",
+  "version": "1.0.0",
+  "description": "Enhanced content creation tool for company wiki",
+  "main": "src/index.js",
+  "bin": {
+    "create-wiki-content": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "inquirer": "^8.2.5",
+    "gray-matter": "^4.0.3",
+    "chalk": "^4.1.2",
+    "commander": "^9.5.0",
+    "date-fns": "^2.30.0",
+    "js-yaml": "^4.1.0",
+    "natural": "^6.2.0",
+    "string-similarity": "^4.0.4"
+  }
+}

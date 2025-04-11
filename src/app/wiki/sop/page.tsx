@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { WikiLayout } from '@/components/layout/WikiLayout';
+import Link from 'next/link';
 
 export default function SopPage() {
   const staticContent = `
@@ -9,7 +10,7 @@ export default function SopPage() {
 
 ## Overview
 
-Standard Operating Procedures (SOPs) are documented, step-by-step instructions that describe how to perform a routine activity. SOPs help maintain quality control, ensure compliance with industry regulations, and reduce miscommunication.
+Standard Operating Procedures (SOPs) are documented, step-by-step instructions that describe how to perform routine activities. SOPs help maintain quality control, ensure compliance with industry regulations, and reduce miscommunication.
 
 This section contains our organization's official SOPs across different departments and functions.
 
@@ -17,21 +18,15 @@ This section contains our organization's official SOPs across different departme
 
 These procedures govern our software development, deployment, and maintenance processes.
 
+- [Development Practices](/wiki/sop/engineering/development-practices)
 - [Deployment Process](/wiki/sop/engineering/deployment)
-- [Code Review Standards](/wiki/sop/engineering/code-review)
-- [Incident Management](/wiki/sop/engineering/incident-management)
-- [Testing Protocols](/wiki/sop/engineering/testing-protocols)
-- [Database Management](/wiki/sop/engineering/database-management)
 
-## Compliance SOPs
+## Operations SOPs
 
-These procedures ensure we maintain regulatory compliance in all operations.
+These procedures cover day-to-day business operations and administrative functions.
 
-- [Incident Response](/wiki/sop/compliance/incident-response)
-- [Audit Procedures](/wiki/sop/compliance/audit-procedures)
-- [Risk Assessment](/wiki/sop/compliance/risk-assessment)
-- [Security Monitoring](/wiki/sop/compliance/security-monitoring)
-- [Training Requirements](/wiki/sop/compliance/training-requirements)
+- [Employee Onboarding](/wiki/sop/operations/employee-onboarding)
+- [Support Escalation](/wiki/sop/operations/support-escalation)
 
 ## Creating and Updating SOPs
 
@@ -46,7 +41,7 @@ All SOPs should follow our standard format:
 7. **Definitions**: Terminology used in the procedure
 8. **Revision History**: Record of changes
 
-To propose a new SOP or update an existing one, please contact the relevant department head or the Compliance Officer.
+To propose a new SOP or update an existing one, please contact the relevant department head or the Operations Director.
 `;
 
   const content = (
@@ -61,7 +56,7 @@ To propose a new SOP or update an existing one, please contact the relevant depa
         </p>
         
         <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          Last updated: March 13, 2025
+          Last updated: March 21, 2024
         </div>
         
         <div className="flex flex-wrap gap-2 mt-4">
@@ -73,6 +68,35 @@ To propose a new SOP or update an existing one, please contact the relevant depa
               {tag}
             </span>
           ))}
+        </div>
+      </div>
+      
+      <div className="grid gap-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Engineering SOPs</h2>
+          <div className="space-y-2">
+            <Link href="/wiki/sop/engineering/development-practices" className="block hover:underline">
+              Development Practices
+            </Link>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Operations SOPs</h2>
+          <div className="space-y-2">
+            <Link href="/wiki/sop/operations/employee-onboarding" className="block hover:underline">
+              Employee Onboarding
+            </Link>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Compliance SOPs</h2>
+          <div className="space-y-2">
+            <Link href="/wiki/sop/compliance/hipaa" className="block hover:underline">
+              HIPAA Compliance
+            </Link>
+          </div>
         </div>
       </div>
       

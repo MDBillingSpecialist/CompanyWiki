@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * HIPAA Dashboard Component
  * 
@@ -7,6 +9,7 @@
  * #tags: hipaa, dashboard, compliance
  */
 import React from 'react';
+import { useHipaaCompliance } from '@/lib/hooks/useHipaaComplianceContext';
 
 export interface ComplianceStatus {
   category: string;
@@ -29,17 +32,9 @@ export interface ReviewItem {
   assignedTo?: string;
 }
 
-export interface HipaaDashboardProps {
-  complianceStatus: ComplianceStatus[];
-  upcomingReviews: ReviewItem[];
-  lastUpdated?: string;
-}
-
-export function HipaaDashboard({ 
-  complianceStatus, 
-  upcomingReviews, 
-  lastUpdated 
-}: HipaaDashboardProps) {
+export function HipaaDashboard() {
+  // Use the shared HIPAA compliance context
+  const { complianceStatus, upcomingReviews, lastUpdated } = useHipaaCompliance();
   // Calculate overall compliance
   const totalCategories = complianceStatus.length;
   const compliantCategories = complianceStatus.filter(
