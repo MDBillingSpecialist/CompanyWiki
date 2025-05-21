@@ -9,12 +9,14 @@
  * #tags: content-management wiki-explorer drag-drop
  */
 import React, { useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { DndProvider, useDrag, useDrop, DropTargetMonitor, DragSourceMonitor } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { 
   DocumentTextIcon, 
   FolderIcon, 
-  PencilIcon, 
+  PencilIcon,
+  PencilSquareIcon,
   TrashIcon, 
   ArrowPathIcon,
   PlusIcon,
@@ -42,11 +44,11 @@ interface ContentNodeProps {
 /**
  * Individual node in the content tree
  */
-const ContentNode: React.FC<ContentNodeProps> = ({ 
-  item, 
-  depth, 
-  onMove, 
-  onRename, 
+const ContentNode: React.FC<ContentNodeProps> = ({
+  item,
+  depth,
+  onMove,
+  onRename,
   onDelete,
   onAddPage,
   onAddSection
@@ -54,6 +56,7 @@ const ContentNode: React.FC<ContentNodeProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   
   const hasChildren = item.children && item.children.length > 0;
   const isSection = hasChildren;
@@ -137,15 +140,25 @@ const ContentNode: React.FC<ContentNodeProps> = ({
     onAddSection(item.path);
     handleCloseContextMenu();
   };
+
+  // Handle edit page
+  const handleEdit = () => {
+    router.push(`/wiki/edit/${item.path.replace(/^\/wiki\//, '')}`);
+    handleCloseContextMenu();
+  };
   
   // Context menu items
   const menuItems = [
     { label: 'Rename', icon: <PencilIcon className="w-4 h-4" />, onClick: handleRename },
     { label: 'Delete', icon: <TrashIcon className="w-4 h-4" />, onClick: handleDelete },
-    ...(isSection ? [
-      { label: 'Add Page', icon: <DocumentTextIcon className="w-4 h-4" />, onClick: handleAddPage },
-      { label: 'Add Section', icon: <FolderIcon className="w-4 h-4" />, onClick: handleAddSection }
-    ] : [])
+    ...(isSection
+      ? [
+          { label: 'Add Page', icon: <DocumentTextIcon className="w-4 h-4" />, onClick: handleAddPage },
+          { label: 'Add Section', icon: <FolderIcon className="w-4 h-4" />, onClick: handleAddSection }
+        ]
+      : [
+          { label: 'Edit', icon: <PencilSquareIcon className="w-4 h-4" />, onClick: handleEdit }
+        ])
   ];
   
   // Determine node style based on drag and drop state
